@@ -132,7 +132,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full max-w-md mx-auto bg-black rounded-lg overflow-hidden"
+      className="relative w-full max-w-2xl mx-auto bg-black rounded-lg overflow-hidden"
       onMouseMove={() => setShowControls(true)}
     >
       {/* Video Container - Fixed aspect ratio 16:9, centered */}

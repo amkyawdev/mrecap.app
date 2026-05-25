@@ -140,9 +140,10 @@ export const SubtitleStylePanel: React.FC<SubtitleStylePanelProps> = ({ onClose 
         ))}
       </div>
 
-      {/* Drag Hint */}
-      <div className="text-center text-neutral-500 text-xs py-1 border-t border-white/5">
-        Drag subtitle to reposition
+      {/* Keyboard Hint */}
+      <div className="text-center text-neutral-500 text-xs py-1 border-t border-white/5 space-y-1">
+        <div>Use Arrow Keys to move subtitle</div>
+        <div className="text-neutral-600">Hold Shift for larger movement</div>
       </div>
     </div>
   );

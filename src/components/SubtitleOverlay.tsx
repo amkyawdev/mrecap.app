@@ -1,22 +1,18 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Subtitle } from '../services/subtitleParser';
 import { useProjectStore } from '../store/projectStore';
 
 interface SubtitleOverlayProps {
   subtitles: Subtitle[];
   currentTime: number;
-  onPositionChange?: (position: { top?: number; bottom?: number; left?: number }) => void;
 }
 
 export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   subtitles,
   currentTime,
-  onPositionChange,
 }) => {
   const [activeSubtitle, setActiveSubtitle] = useState<Subtitle | null>(null);
-  const [position, setPosition] = useState<{ top?: number; bottom?: number; left?: number; right?: number }>({ bottom: 60 });
-  const [isDragging, setIsDragging] = useState(false);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ bottom: 40, left: 50 });
   const { subtitleStyle } = useProjectStore();
 
   useEffect(() => {
@@ -35,71 +31,71 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
     return `rgba(${r}, ${g}, ${b}, ${subtitleStyle.backgroundOpacity})`;
   }, [subtitleStyle.backgroundColor, subtitleStyle.backgroundOpacity]);
 
-  // Handle drag
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
+  // Keyboard arrow controls
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!activeSubtitle) return;
+    
+    const step = e.shiftKey ? 10 : 2; // Shift for larger movement
+    
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        setPosition(prev => ({
+          ...prev,
+          bottom: Math.min(95, (prev.bottom || 0) + step),
+          top: undefined
+        }));
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        setPosition(prev => ({
+          ...prev,
+          bottom: Math.max(5, (prev.bottom || 40) - step),
+          top: undefined
+        }));
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        setPosition(prev => ({
+          ...prev,
+          left: Math.max(5, (prev.left || 50) - step)
+        }));
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        setPosition(prev => ({
+          ...prev,
+          left: Math.min(95, (prev.left || 50) + step)
+        }));
+        break;
+    }
+  }, [activeSubtitle]);
 
   useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!overlayRef.current) return;
-      
-      const parent = overlayRef.current.parentElement;
-      if (!parent) return;
-      
-      const rect = parent.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      // Calculate percentage position
-      const leftPercent = (x / rect.width) * 100;
-      const topPercent = (y / rect.height) * 100;
-      
-      // Clamp to reasonable bounds
-      const clampedX = Math.max(5, Math.min(95, leftPercent));
-      const clampedY = Math.max(10, Math.min(90, topPercent));
-      
-      setPosition({ 
-        left: clampedX,
-        top: clampedY,
-        bottom: undefined 
-      });
-      
-      onPositionChange?.({ 
-        left: clampedX,
-        top: clampedY 
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, onPositionChange]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   if (!activeSubtitle) return null;
 
+  // Position style
+  const getPositionStyle = () => {
+    const pos = position as { bottom?: number; left: number; top?: number };
+    const baseStyle: React.CSSProperties = {
+      left: `${pos.left}%`,
+      transform: 'translateX(-50%)',
+    };
+    
+    if (pos.top !== undefined) {
+      return { ...baseStyle, top: `${pos.top}%`, bottom: undefined };
+    }
+    return { ...baseStyle, bottom: `${pos.bottom}px`, top: undefined };
+  };
+
   return (
     <div
-      ref={overlayRef}
-      className="absolute cursor-move"
-      style={{
-        left: position.left !== undefined ? `${position.left}%` : undefined,
-        top: position.top !== undefined ? `${position.top}%` : undefined,
-        bottom: position.bottom !== undefined ? `${position.bottom}px` : undefined,
-        transform: position.top ? 'translateY(-50%)' : position.left ? 'translateX(-50%)' : undefined,
-      }}
-      onMouseDown={handleMouseDown}
+      className="absolute pointer-events-none"
+      style={getPositionStyle()}
     >
       <div
         style={{
@@ -112,8 +108,6 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
           padding: '8px 16px',
           borderRadius: '8px',
           maxWidth: '90%',
-          userSelect: 'none',
-          border: isDragging ? '2px dashed rgba(255,255,255,0.5)' : '2px solid transparent',
         }}
       >
         <p style={{
