@@ -197,29 +197,19 @@ export const FullEditorScreen: React.FC = () => {
   return (
     <div className="h-screen bg-neutral-950 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between p-2 md:p-3 border-b border-white/5 bg-neutral-900/80 shrink-0">
+      <header className="flex items-center justify-between p-2 border-b border-white/5 bg-neutral-900/80 shrink-0">
         <div className="flex items-center gap-2">
           <button onClick={handleBack} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-2 text-white">
-            <Film className="w-5 h-5 text-red-500" />
-            <span className="font-semibold hidden sm:inline">Video Editor</span>
-          </div>
+          <span className="text-white font-semibold text-sm">Video Editor</span>
         </div>
 
-        <div className="flex items-center gap-1 md:gap-2">
-          <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors" title="Undo">
-            <Undo className="w-4 h-4" />
-          </button>
-          <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors" title="Redo">
-            <Redo className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-1">
           <button 
             onClick={handleSplit}
             disabled={!selectedClipId}
             className={`p-2 rounded-lg transition-colors ${selectedClipId ? 'bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white' : 'bg-white/5 text-white/30 cursor-not-allowed'}`}
-            title="Split clip"
           >
             <Scissors className="w-4 h-4" />
           </button>
@@ -227,83 +217,27 @@ export const FullEditorScreen: React.FC = () => {
             onClick={handleDeleteClip}
             disabled={!selectedClipId}
             className={`p-2 rounded-lg transition-colors ${selectedClipId ? 'bg-white/5 hover:bg-red-600 text-neutral-400 hover:text-white' : 'bg-white/5 text-white/30 cursor-not-allowed'}`}
-            title="Delete clip"
           >
             <Trash2 className="w-4 h-4" />
           </button>
-          <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors hidden md:block" title="Settings">
-            <Settings className="w-4 h-4" />
-          </button>
           <button 
             onClick={handleExport}
-            className="ml-2 px-3 md:px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            className="ml-1 px-3 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1"
           >
-            <Download className="w-4 h-4" /> 
-            <span className="hidden sm:inline">Export</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Export</span>
           </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Tools */}
-        <div className="w-72 md:w-80 border-r border-white/5 bg-neutral-900/50 flex flex-col shrink-0">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-white/5 shrink-0">
-            <button
-              onClick={() => setActiveTab('effects')}
-              className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
-                activeTab === 'effects'
-                  ? 'text-red-500 border-b-2 border-red-500'
-                  : 'text-neutral-500 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              Effects
-            </button>
-            <button
-              onClick={() => setActiveTab('text')}
-              className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
-                activeTab === 'text'
-                  ? 'text-red-500 border-b-2 border-red-500'
-                  : 'text-neutral-500 hover:text-white'
-              }`}
-            >
-              <Type className="w-4 h-4" />
-              Text
-            </button>
-            <button
-              onClick={() => setActiveTab('audio')}
-              className={`flex-1 py-3 text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
-                activeTab === 'audio'
-                  ? 'text-red-500 border-b-2 border-red-500'
-                  : 'text-neutral-500 hover:text-white'
-              }`}
-            >
-              <Music className="w-4 h-4" />
-              Audio
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-3 md:p-4">
-            {activeTab === 'effects' && (
-              <EffectsPanel clipId={selectedClipId} />
-            )}
-            {activeTab === 'text' && (
-              <TextOverlayEditor />
-            )}
-            {activeTab === 'audio' && (
-              <AudioPanel onUpload={handleAudioUpload} tracks={audioTracks} />
-            )}
-          </div>
-        </div>
-
-        {/* Main Preview Area */}
-        <div className="flex-1 flex flex-col bg-black">
-          {/* Video Preview */}
-          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-            <div className="w-full max-w-5xl">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        {/* Video Preview - Mobile: Top, Desktop: Left */}
+        <div className="lg:flex-1 bg-black flex flex-col">
+          {/* Video Preview Area */}
+          <div className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden">
+            <div className="w-full max-w-lg mx-auto">
               {previewUrl && (
                 <VideoPlayer
                   src={previewUrl}
@@ -319,12 +253,65 @@ export const FullEditorScreen: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
 
-          {/* Timeline */}
-          <div className="bg-neutral-900 border-t border-white/5 shrink-0">
-            <Timeline />
+        {/* Sidebar Tools - Mobile: Bottom tabs, Desktop: Right */}
+        <div className="lg:w-72 border-t lg:border-t-0 lg:border-l border-white/5 bg-neutral-900/50 flex flex-col shrink-0">
+          {/* Tab Navigation */}
+          <div className="flex border-b border-white/5 shrink-0">
+            <button
+              onClick={() => setActiveTab('effects')}
+              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                activeTab === 'effects'
+                  ? 'text-red-500 border-b-2 border-red-500'
+                  : 'text-neutral-500 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Effects</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('text')}
+              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                activeTab === 'text'
+                  ? 'text-red-500 border-b-2 border-red-500'
+                  : 'text-neutral-500 hover:text-white'
+              }`}
+            >
+              <Type className="w-4 h-4" />
+              <span>Text</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('audio')}
+              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+                activeTab === 'audio'
+                  ? 'text-red-500 border-b-2 border-red-500'
+                  : 'text-neutral-500 hover:text-white'
+              }`}
+            >
+              <Music className="w-4 h-4" />
+              <span>Audio</span>
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-2 md:p-3">
+            {activeTab === 'effects' && (
+              <EffectsPanel clipId={selectedClipId} />
+            )}
+            {activeTab === 'text' && (
+              <TextOverlayEditor />
+            )}
+            {activeTab === 'audio' && (
+              <AudioPanel onUpload={handleAudioUpload} tracks={audioTracks} />
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Timeline - Always at bottom */}
+      <div className="bg-neutral-900 border-t border-white/5 shrink-0">
+        <Timeline />
       </div>
 
       {/* Export Modal */}

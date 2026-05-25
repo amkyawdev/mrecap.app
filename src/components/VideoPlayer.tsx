@@ -140,7 +140,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
         className="relative w-full bg-black"
         style={{ 
           paddingBottom: `${(1 / videoAspectRatio) * 100}%`,
-          maxHeight: '70vh'
+          maxHeight: '60vh',
+          maxWidth: '100%'
         }}
       >
         <div className="absolute inset-0">
