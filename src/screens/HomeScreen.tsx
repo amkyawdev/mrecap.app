@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useVideoEditor } from '../hooks/useVideoEditor';
 import { usePWAPrompt } from '../hooks/usePWAPrompt';
+import { Film, FolderOpen, ChevronRight, Smartphone, Video, Type, Mic, Download, Check } from 'lucide-react';
 
 export const HomeScreen: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,408 +35,104 @@ export const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="home-screen">
+    <div className="min-h-screen bg-neutral-950 relative overflow-hidden">
       {/* Background Effects */}
-      <div className="bg-effects">
-        <div className="bg-gradient"></div>
-        <div className="bg-grid"></div>
-        <div className="bg-glow"></div>
-      </div>
-
+      <div className="absolute inset-0 bg-gradient-to-br from-red-950/20 via-neutral-950 to-neutral-950"></div>
+      <div className="absolute inset-0 opacity-30" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, rgba(229,9,20,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255,215,0,0.05) 0%, transparent 50%)'}}></div>
+      
       {/* Header */}
-      <header className="home-header">
-        <div className="logo">
-          <span className="logo-icon">🎬</span>
-          <span className="logo-text">MRecap</span>
+      <header className="relative z-10 flex justify-between items-center p-4 md:p-6">
+        <div className="flex items-center gap-2">
+          <Film className="w-7 h-7 md:w-8 md:h-8 text-red-500" />
+          <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-red-500 to-red-400 bg-clip-text text-transparent">MRecap</span>
         </div>
-        <div className="header-actions">
-          {isInstalled && (
-            <span className="installed-badge">
-              <span className="badge-dot"></span>
-              Installed
-            </span>
-          )}
-        </div>
+        {isInstalled && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 text-xs font-medium">
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            Installed
+          </span>
+        )}
       </header>
 
       {/* Hero Section */}
-      <main className="hero-section">
-        <div className={`hero-content ${isLoaded ? 'loaded' : ''}`}>
-          <div className="hero-badge">
-            <span className="badge-icon">✨</span>
+      <main className="relative z-10 flex flex-col items-center justify-center px-4 py-8 md:py-12">
+        <div className={`text-center max-w-xl transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-400 text-xs font-medium mb-4 md:mb-6">
+            <span>✨</span>
             <span>Create Stunning Recaps</span>
-          </div>
+          </span>
           
-          <h1 className="hero-title">
-            <span className="title-line">Movie Recap</span>
-            <span className="title-accent">Editor</span>
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 leading-tight">
+            <span className="text-white">Movie Recap</span>
+            <br />
+            <span className="bg-gradient-to-r from-red-500 via-red-400 to-amber-400 bg-clip-text text-transparent">Editor</span>
           </h1>
           
-          <p className="hero-description">
-            Transform your videos into captivating recaps with 
-            automatic subtitles, voiceover, and professional effects.
+          <p className="text-neutral-400 text-sm md:text-base lg:text-lg mb-6 md:mb-8 max-w-md mx-auto leading-relaxed">
+            Transform your videos into captivating recaps with automatic subtitles, voiceover, and professional effects.
           </p>
 
-          <div className="hero-actions">
-            <button onClick={handleSelectVideo} className="btn btn-primary btn-lg btn-glow">
-              <span className="btn-icon">📂</span>
+          <div className="flex flex-col items-center gap-3 md:gap-4">
+            <button 
+              onClick={handleSelectVideo} 
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 hover:shadow-red-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base"
+            >
+              <FolderOpen className="w-4 h-4" />
               Select Video
             </button>
             
             {videoSrc && (
-              <button onClick={handleProceed} className="btn btn-secondary btn-lg">
+              <button 
+                onClick={handleProceed} 
+                className="w-full sm:w-auto px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-red-500/50 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm"
+              >
                 Continue
-                <span className="btn-arrow">→</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
 
         {/* Feature Cards */}
-        <div className={`features-grid ${isLoaded ? 'loaded' : ''}`}>
-          <div className="feature-card">
-            <div className="feature-icon">🎥</div>
-            <h3>Video Selection</h3>
-            <p>Choose any video from your device</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">📝</div>
-            <h3>Subtitle Editor</h3>
-            <p>Add and edit subtitles easily</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🎙️</div>
-            <h3>Voiceover</h3>
-            <p>Record or upload audio</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">📤</div>
-            <h3>Export & Share</h3>
-            <p>Download or share your creation</p>
-          </div>
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-10 md:mt-16 w-full max-w-2xl md:max-w-3xl transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          {[
+            { icon: Video, title: 'Video', desc: 'Select any video' },
+            { icon: Type, title: 'Subtitles', desc: 'Add & edit text' },
+            { icon: Mic, title: 'Voiceover', desc: 'Record audio' },
+            { icon: Download, title: 'Export', desc: 'Share your work' },
+          ].map((feature, i) => (
+            <div key={i} className="bg-neutral-900/80 border border-white/5 rounded-xl p-4 md:p-5 text-center hover:border-red-500/30 hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-1">
+              <feature.icon className="w-6 h-6 md:w-7 md:h-7 mx-auto mb-2 text-red-400" />
+              <h3 className="text-white font-semibold text-sm md:text-base mb-1">{feature.title}</h3>
+              <p className="text-neutral-500 text-xs">{feature.desc}</p>
+            </div>
+          ))}
         </div>
       </main>
 
       {/* Install Prompt */}
       {needsInstall && (
-        <div className="install-prompt animate-slide-up">
-          <div className="install-content">
-            <div className="install-icon">📱</div>
-            <div className="install-text">
-              <strong>Get the App</strong>
-              <span>Install for offline access and better experience</span>
+        <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:max-w-sm mx-auto bg-neutral-900 border border-white/10 rounded-xl p-4 shadow-xl flex items-center justify-between gap-4 animate-slide-up z-50">
+          <div className="flex items-center gap-3">
+            <Smartphone className="w-6 h-6 text-neutral-400" />
+            <div>
+              <p className="text-white text-sm font-medium">Get the App</p>
+              <p className="text-neutral-500 text-xs">Install for offline access</p>
             </div>
           </div>
-          <button onClick={installApp} className="btn btn-sm btn-ghost">
+          <button onClick={installApp} className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors">
             Install
           </button>
         </div>
       )}
 
       <style>{`
-        .home-screen {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          position: relative;
-          overflow: hidden;
-          background: var(--bg-primary);
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-
-        /* Background Effects */
-        .bg-effects {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-        }
-
-        .bg-gradient {
-          position: absolute;
-          inset: 0;
-          background: 
-            radial-gradient(ellipse at 30% 20%, rgba(229, 9, 20, 0.15) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 80%, rgba(255, 215, 0, 0.08) 0%, transparent 50%);
-        }
-
-        .bg-grid {
-          position: absolute;
-          inset: 0;
-          background-image: 
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-          background-size: 60px 60px;
-        }
-
-        .bg-glow {
-          position: absolute;
-          top: -50%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 100%;
-          height: 100%;
-          background: radial-gradient(circle, rgba(229, 9, 20, 0.1) 0%, transparent 60%);
-          filter: blur(80px);
-        }
-
-        /* Header */
-        .home-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-lg) var(--space-xl);
-          position: relative;
-          z-index: 10;
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: var(--space-sm);
-        }
-
-        .logo-icon {
-          font-size: 2rem;
-        }
-
-        .logo-text {
-          font-size: 1.5rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .installed-badge {
-          display: flex;
-          align-items: center;
-          gap: var(--space-xs);
-          padding: 8px 16px;
-          background: rgba(70, 211, 105, 0.15);
-          border: 1px solid rgba(70, 211, 105, 0.3);
-          border-radius: var(--radius-full);
-          color: var(--success);
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .badge-dot {
-          width: 8px;
-          height: 8px;
-          background: var(--success);
-          border-radius: 50%;
-          animation: pulse 2s ease infinite;
-        }
-
-        /* Hero Section */
-        .hero-section {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: var(--space-xl);
-          position: relative;
-          z-index: 10;
-        }
-
-        .hero-content {
-          text-align: center;
-          max-width: 600px;
-          opacity: 0;
-          transform: translateY(30px);
-          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .hero-content.loaded {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .hero-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-sm);
-          padding: 8px 16px;
-          background: rgba(255, 215, 0, 0.1);
-          border: 1px solid rgba(255, 215, 0, 0.2);
-          border-radius: var(--radius-full);
-          color: var(--accent);
-          font-size: 0.875rem;
-          font-weight: 500;
-          margin-bottom: var(--space-lg);
-        }
-
-        .badge-icon {
-          font-size: 1rem;
-        }
-
-        .hero-title {
-          font-size: 4rem;
-          font-weight: 800;
-          line-height: 1.1;
-          margin-bottom: var(--space-lg);
-        }
-
-        .title-line {
-          display: block;
-          color: var(--text-primary);
-        }
-
-        .title-accent {
-          display: block;
-          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 50%, var(--accent) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .hero-description {
-          font-size: 1.25rem;
-          color: var(--text-secondary);
-          line-height: 1.6;
-          margin-bottom: var(--space-xl);
-          max-width: 480px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        .hero-actions {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-md);
-        }
-
-        .btn-glow {
-          animation: glow 3s ease infinite;
-        }
-
-        .btn-arrow {
-          margin-left: var(--space-xs);
-          transition: transform var(--transition-fast);
-        }
-
-        .btn:hover .btn-arrow {
-          transform: translateX(4px);
-        }
-
-        /* Features Grid */
-        .features-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: var(--space-md);
-          margin-top: var(--space-2xl);
-          width: 100%;
-          max-width: 800px;
-          opacity: 0;
-          transform: translateY(20px);
-          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
-        }
-
-        .features-grid.loaded {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .feature-card {
-          background: var(--bg-card);
-          border: 1px solid rgba(255,255,255,0.05);
-          border-radius: var(--radius-lg);
-          padding: var(--space-lg);
-          text-align: center;
-          transition: all var(--transition-normal);
-        }
-
-        .feature-card:hover {
-          transform: translateY(-4px);
-          border-color: var(--primary);
-          box-shadow: var(--shadow-lg);
-        }
-
-        .feature-icon {
-          font-size: 2.5rem;
-          margin-bottom: var(--space-sm);
-        }
-
-        .feature-card h3 {
-          color: var(--text-primary);
-          font-size: 1rem;
-          margin-bottom: var(--space-xs);
-        }
-
-        .feature-card p {
-          font-size: 0.875rem;
-          color: var(--text-muted);
-        }
-
-        /* Install Prompt */
-        .install-prompt {
-          position: fixed;
-          bottom: var(--space-lg);
-          left: var(--space-lg);
-          right: var(--space-lg);
-          max-width: 480px;
-          margin: 0 auto;
-          background: var(--bg-card);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: var(--radius-lg);
-          padding: var(--space-md);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          box-shadow: var(--shadow-lg);
-          z-index: 100;
-        }
-
-        .install-content {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-        }
-
-        .install-icon {
-          font-size: 2rem;
-        }
-
-        .install-text {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .install-text strong {
-          color: var(--text-primary);
-          font-size: 0.875rem;
-        }
-
-        .install-text span {
-          color: var(--text-muted);
-          font-size: 0.75rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .hero-title {
-            font-size: 2.5rem;
-          }
-
-          .hero-description {
-            font-size: 1rem;
-          }
-
-          .features-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-
-          .install-prompt {
-            flex-direction: column;
-            gap: var(--space-md);
-            text-align: center;
-          }
-
-          .install-content {
-            flex-direction: column;
-          }
+        .animate-slide-up {
+          animation: slideUp 0.3s ease forwards;
         }
       `}</style>
     </div>

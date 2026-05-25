@@ -4,6 +4,7 @@ import { useProjectStore } from '../store/projectStore';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { TimelineSlider } from '../components/TimelineSlider';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
+import { ArrowLeft, Video, Clapperboard, FolderOpen, ChevronRight, RotateCcw } from 'lucide-react';
 
 export const VideoEditorScreen: React.FC = () => {
   const { subtitles } = useProjectStore();
@@ -39,105 +40,54 @@ export const VideoEditorScreen: React.FC = () => {
 
   if (!videoSrc) {
     return (
-      <div className="video-editor-screen">
-        <header className="screen-header">
-          <button onClick={reset} className="btn btn-secondary btn-icon">
-            ←
+      <div className="min-h-screen bg-neutral-950 flex flex-col">
+        <header className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+          <button onClick={reset} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h2>🎥 Select Video</h2>
+          <h2 className="text-white font-semibold flex items-center gap-2">
+            <Video className="w-5 h-5" /> Select Video
+          </h2>
           <div></div>
         </header>
 
-        <div className="upload-center">
-          <div className={`upload-zone ${isLoaded ? 'loaded' : ''}`}>
-            <div className="upload-icon">📹</div>
-            <h3>Choose Your Video</h3>
-            <p>Select a video file to get started with your recap</p>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className={`text-center p-8 md:p-12 max-w-md w-full transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <Clapperboard className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-6 text-neutral-600 animate-bounce" />
+            <h3 className="text-white text-lg md:text-xl font-semibold mb-2">Choose Your Video</h3>
+            <p className="text-neutral-500 text-sm mb-6">Select a video file to get started with your recap</p>
             
-            <label className="btn btn-primary btn-lg">
-              <span>📂</span>
+            <label className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 cursor-pointer text-sm">
+              <FolderOpen className="w-4 h-4" />
               Browse Files
               <input
                 type="file"
                 accept="video/*"
                 onChange={handleLoadVideo}
-                style={{ display: 'none' }}
+                className="hidden"
               />
             </label>
           </div>
         </div>
-
-        <style>{`
-          .video-editor-screen {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-primary);
-          }
-          
-          .upload-center {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-xl);
-          }
-          
-          .upload-zone {
-            text-align: center;
-            padding: var(--space-2xl);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          
-          .upload-zone.loaded {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          
-          .upload-icon {
-            font-size: 5rem;
-            margin-bottom: var(--space-lg);
-            animation: float 3s ease-in-out infinite;
-          }
-          
-          @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-          }
-          
-          .upload-zone h3 {
-            color: var(--text-primary);
-            font-size: 1.5rem;
-            margin-bottom: var(--space-sm);
-          }
-          
-          .upload-zone p {
-            color: var(--text-muted);
-            margin-bottom: var(--space-xl);
-            max-width: 300px;
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
-    <div className="video-editor-screen">
-      <header className="screen-header">
-        <button onClick={reset} className="btn btn-secondary btn-icon">
-          ←
+    <div className="min-h-screen bg-neutral-950 flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+        <button onClick={reset} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2>🎬 Video Editor</h2>
-        <div className="header-info">
-          <span className="duration-badge">
-            {formatDuration(videoDuration)}
-          </span>
-        </div>
+        <h2 className="text-white font-semibold flex items-center gap-2">
+          <Clapperboard className="w-5 h-5" /> Video Editor
+        </h2>
+        <span className="px-3 py-1 bg-white/5 rounded-full text-neutral-400 text-xs font-medium">
+          {formatDuration(videoDuration)}
+        </span>
       </header>
 
-      <div className="video-container">
+      <div className="flex-1 bg-black flex items-center justify-center min-h-[300px]">
         <VideoPlayer
           src={videoSrc}
           onTimeUpdate={handleTimeUpdate}
@@ -151,11 +101,11 @@ export const VideoEditorScreen: React.FC = () => {
         />
       </div>
 
-      <div className="editor-controls">
-        <div className="timeline-section">
-          <div className="time-labels">
-            <span className="time-current">{formatDuration(currentTime)}</span>
-            <span className="time-total">/ {formatDuration(videoDuration)}</span>
+      <div className="p-4 md:p-6 bg-neutral-900 border-t border-white/5">
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-baseline gap-1 mb-3">
+            <span className="text-xl md:text-2xl font-bold text-white tabular-nums">{formatDuration(currentTime)}</span>
+            <span className="text-neutral-500 text-sm">/ {formatDuration(videoDuration)}</span>
           </div>
           
           <TimelineSlider
@@ -167,111 +117,22 @@ export const VideoEditorScreen: React.FC = () => {
             onRangeChange={setTrimRange}
           />
           
-          <div className="trim-info">
+          <div className="flex justify-between mt-3 text-xs text-neutral-500">
             <span>Trim: {formatDuration(trimStart)} - {formatDuration(trimEnd)}</span>
-            <span className="trim-duration">
-              Duration: {formatDuration(trimEnd - trimStart)}
-            </span>
+            <span className="text-red-500 font-medium">Duration: {formatDuration(trimEnd - trimStart)}</span>
           </div>
         </div>
 
-        <div className="action-buttons">
-          <button onClick={reset} className="btn btn-ghost">
-            🔄 Start Over
+        <div className="flex flex-col sm:flex-row gap-3 justify-end">
+          <button onClick={reset} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+            <RotateCcw className="w-4 h-4" /> Start Over
           </button>
           
-          <button onClick={goToNext} className="btn btn-primary btn-lg">
-            Continue to Subtitles
-            <span>→</span>
+          <button onClick={goToNext} className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2">
+            Continue to Subtitles <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
-
-      <style>{`
-        .video-editor-screen {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg-primary);
-        }
-
-        .header-info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-        }
-
-        .duration-badge {
-          padding: 6px 12px;
-          background: var(--bg-card);
-          border-radius: var(--radius-full);
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--text-secondary);
-        }
-
-        .video-container {
-          flex: 1;
-          background: #000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 300px;
-          position: relative;
-        }
-
-        .editor-controls {
-          background: var(--bg-secondary);
-          border-top: 1px solid rgba(255,255,255,0.05);
-          padding: var(--space-lg);
-        }
-
-        .timeline-section {
-          margin-bottom: var(--space-lg);
-        }
-
-        .time-labels {
-          display: flex;
-          align-items: baseline;
-          gap: var(--space-xs);
-          margin-bottom: var(--space-md);
-        }
-
-        .time-current {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--text-primary);
-          font-variant-numeric: tabular-nums;
-        }
-
-        .time-total {
-          font-size: 1rem;
-          color: var(--text-muted);
-        }
-
-        .trim-info {
-          display: flex;
-          justify-content: space-between;
-          margin-top: var(--space-md);
-          font-size: 0.875rem;
-          color: var(--text-muted);
-        }
-
-        .trim-duration {
-          color: var(--primary);
-          font-weight: 500;
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: var(--space-md);
-          justify-content: flex-end;
-        }
-
-        .action-buttons .btn span {
-          margin-left: var(--space-xs);
-        }
-      `}</style>
     </div>
   );
 };

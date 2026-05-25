@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useExport } from '../hooks/useExport';
-import { ProgressBar } from '../components/ProgressBar';
+import { ArrowLeft, Video, Music, Type, Upload, Share2, Download, Plus, AlertTriangle, Loader2 } from 'lucide-react';
 
 export const ExportScreen: React.FC = () => {
   const {
@@ -19,139 +19,70 @@ export const ExportScreen: React.FC = () => {
   } = useExport();
 
   const [isLoaded, setIsLoaded] = useState(false);
+  const [progressMessage, setProgressMessage] = useState('');
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
 
+  // Update progress message based on export progress
+  useEffect(() => {
+    if (exportProgress < 5) setProgressMessage('Initializing...');
+    else if (exportProgress < 20) setProgressMessage('Loading FFmpeg...');
+    else if (exportProgress < 25) setProgressMessage('Loading video file...');
+    else if (exportProgress < 35) setProgressMessage('Video loaded');
+    else if (exportProgress < 50) setProgressMessage('Processing subtitles...');
+    else if (exportProgress < 60) setProgressMessage('Loading audio...');
+    else if (exportProgress < 90) setProgressMessage('Processing video...');
+    else if (exportProgress < 100) setProgressMessage('Finalizing...');
+    else setProgressMessage('Export complete!');
+  }, [exportProgress]);
+
   if (isExporting) {
     return (
-      <div className="export-screen">
-        <div className="exporting-state animate-fade-in">
-          <div className="export-icon-container">
-            <div className="export-spinner"></div>
-            <span className="export-icon">🎬</span>
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className="text-center max-w-md animate-fade-in">
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <Loader2 className="w-20 h-20 text-red-500 animate-spin" />
+            <Video className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-white" />
           </div>
           
-          <h2>Creating Your Recap</h2>
-          <p className="export-status">Please wait while we process your video...</p>
+          <h2 className="text-white text-xl font-semibold mb-2">Creating Your Recap</h2>
+          <p className="text-neutral-500 text-sm mb-6">{progressMessage}</p>
           
-          <div className="progress-section">
-            <ProgressBar progress={exportProgress} label="Rendering" />
-            <span className="progress-percent">{Math.round(exportProgress)}%</span>
+          <div className="mb-6">
+            <div className="h-2 bg-neutral-800 rounded-full overflow-hidden mb-2">
+              <div className="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-300" style={{ width: `${exportProgress}%` }}></div>
+            </div>
+            <span className="text-red-500 font-bold text-lg">{Math.round(exportProgress)}%</span>
           </div>
           
-          <div className="processing-steps">
-            <div className={`step ${exportProgress > 0 ? 'active' : ''}`}>
-              <span className="step-icon">📹</span>
-              <span>Processing video</span>
-            </div>
-            <div className={`step ${exportProgress > 33 ? 'active' : ''}`}>
-              <span className="step-icon">📝</span>
-              <span>Adding subtitles</span>
-            </div>
-            <div className={`step ${exportProgress > 66 ? 'active' : ''}`}>
-              <span className="step-icon">🎵</span>
-              <span>Mixing audio</span>
-            </div>
-            <div className={`step ${exportProgress >= 100 ? 'active' : ''}`}>
-              <span className="step-icon">✅</span>
-              <span>Finalizing</span>
-            </div>
+          <div className="space-y-2 text-left">
+            {[
+              { label: 'Loading FFmpeg', active: exportProgress > 5 },
+              { label: 'Loading video', active: exportProgress > 15 },
+              { label: 'Processing subtitles', active: exportProgress > 35 },
+              { label: 'Mixing audio', active: exportProgress > 50 },
+              { label: 'Encoding video', active: exportProgress > 60 },
+              { label: 'Finalizing', active: exportProgress >= 90 },
+            ].map((step, i) => (
+              <div key={i} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${step.active ? 'bg-neutral-800 text-white' : 'bg-neutral-900/50 text-neutral-500'}`}>
+                {step.active ? (
+                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-neutral-600"></div>
+                )}
+                <span className="text-sm">{step.label}</span>
+              </div>
+            ))}
           </div>
         </div>
         
         <style>{`
-          .export-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-primary);
-            padding: var(--space-xl);
-          }
-
-          .exporting-state {
-            text-align: center;
-            max-width: 400px;
-          }
-
-          .export-icon-container {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            margin: 0 auto var(--space-xl);
-          }
-
-          .export-spinner {
-            position: absolute;
-            inset: 0;
-            border: 4px solid var(--bg-card);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-          }
-
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-
-          .export-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2.5rem;
-          }
-
-          .exporting-state h2 {
-            color: var(--text-primary);
-            margin-bottom: var(--space-sm);
-          }
-
-          .export-status {
-            color: var(--text-muted);
-            margin-bottom: var(--space-xl);
-          }
-
-          .progress-section {
-            margin-bottom: var(--space-2xl);
-          }
-
-          .progress-percent {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-top: var(--space-md);
-            display: block;
-          }
-
-          .processing-steps {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
-            text-align: left;
-          }
-
-          .step {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            padding: var(--space-md);
-            background: var(--bg-card);
-            border-radius: var(--radius-md);
-            color: var(--text-muted);
-            transition: all var(--transition-normal);
-          }
-
-          .step.active {
-            color: var(--text-primary);
-            background: var(--bg-elevated);
-          }
-
-          .step-icon {
-            font-size: 1.25rem;
-          }
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
         `}</style>
       </div>
     );
@@ -159,341 +90,114 @@ export const ExportScreen: React.FC = () => {
 
   if (exportedVideoSrc) {
     return (
-      <div className="export-screen">
-        <div className={`success-state ${isLoaded ? 'loaded' : ''}`}>
-          <div className="success-icon">🎉</div>
-          
-          <h2>Export Complete!</h2>
-          <p className="success-message">Your video recap is ready to share</p>
-          
-          <div className="export-summary">
-            <div className="summary-item">
-              <span className="summary-icon">📹</span>
-              <div className="summary-content">
-                <span className="summary-label">Video</span>
-                <span className="summary-value">{videoSrc ? 'Ready' : 'Missing'}</span>
-              </div>
-              <span className={`summary-status ${videoSrc ? 'complete' : 'warning'}`}>
-                {videoSrc ? '✓' : '!'}
-              </span>
-            </div>
-            
-            <div className="summary-item">
-              <span className="summary-icon">🎵</span>
-              <div className="summary-content">
-                <span className="summary-label">Audio</span>
-                <span className="summary-value">{audioSrc ? 'Added' : 'Not added'}</span>
-              </div>
-              <span className={`summary-status ${audioSrc ? 'complete' : 'neutral'}`}>
-                {audioSrc ? '✓' : '○'}
-              </span>
-            </div>
-            
-            <div className="summary-item">
-              <span className="summary-icon">📝</span>
-              <div className="summary-content">
-                <span className="summary-label">Subtitles</span>
-                <span className="summary-value">{subtitles.length > 0 ? `${subtitles.length} added` : 'None'}</span>
-              </div>
-              <span className={`summary-status ${subtitles.length > 0 ? 'complete' : 'neutral'}`}>
-                {subtitles.length > 0 ? '✓' : '○'}
-              </span>
-            </div>
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
+        <div className={`text-center max-w-sm transition-all duration-500 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className="w-20 h-20 mx-auto mb-4 bg-green-500/20 rounded-full flex items-center justify-center">
+            <Download className="w-10 h-10 text-green-500" />
           </div>
           
-          <div className="success-actions">
-            <button onClick={shareVideo} className="btn btn-primary btn-lg">
-              <span>📤</span>
-              Share Video
+          <h2 className="text-white text-xl font-semibold mb-2">Export Complete!</h2>
+          <p className="text-neutral-500 text-sm mb-6">Your video recap is ready to download</p>
+          
+          <div className="bg-neutral-900 rounded-xl p-4 mb-6 space-y-3">
+            {[
+              { icon: Video, label: 'Video', value: 'Processed', complete: true },
+              { icon: Type, label: 'Subtitles', value: subtitles.length > 0 ? 'Burned in' : 'None', complete: true },
+              { icon: Music, label: 'Audio', value: audioSrc ? 'Mixed' : 'Original', complete: true },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-2">
+                <item.icon className="w-5 h-5 text-neutral-400" />
+                <div className="flex-1 text-left">
+                  <span className="text-white text-sm font-medium block">{item.label}</span>
+                  <span className="text-neutral-500 text-xs">{item.value}</span>
+                </div>
+                <span className="text-green-500">✓</span>
+              </div>
+            ))}
+          </div>
+          
+          <div className="space-y-3">
+            <button onClick={saveToGallery} className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2">
+              <Download className="w-4 h-4" /> Download Video
             </button>
             
-            <button onClick={saveToGallery} className="btn btn-secondary btn-lg">
-              <span>💾</span>
-              Save to Device
+            <button onClick={shareVideo} className="w-full px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <Share2 className="w-4 h-4" /> Share
             </button>
             
-            <button onClick={restart} className="btn btn-ghost btn-lg">
-              <span>➕</span>
-              Create New Recap
+            <button onClick={restart} className="w-full px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <Plus className="w-4 h-4" /> Create New Recap
             </button>
           </div>
         </div>
-        
-        <style>{`
-          .export-screen {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-primary);
-            padding: var(--space-xl);
-          }
-
-          .success-state {
-            text-align: center;
-            max-width: 450px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s ease;
-          }
-
-          .success-state.loaded {
-            opacity: 1;
-            transform: translateY(0);
-          }
-
-          .success-icon {
-            font-size: 5rem;
-            margin-bottom: var(--space-lg);
-            animation: bounce 1s ease infinite;
-          }
-
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-          }
-
-          .success-state h2 {
-            color: var(--text-primary);
-            font-size: 2rem;
-            margin-bottom: var(--space-sm);
-          }
-
-          .success-message {
-            color: var(--text-muted);
-            margin-bottom: var(--space-xl);
-          }
-
-          .export-summary {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: var(--space-lg);
-            margin-bottom: var(--space-xl);
-          }
-
-          .summary-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            padding: var(--space-md) 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-          }
-
-          .summary-item:last-child {
-            border-bottom: none;
-          }
-
-          .summary-icon {
-            font-size: 1.5rem;
-          }
-
-          .summary-content {
-            flex: 1;
-            text-align: left;
-          }
-
-          .summary-label {
-            display: block;
-            color: var(--text-primary);
-            font-weight: 600;
-          }
-
-          .summary-value {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-          }
-
-          .summary-status {
-            font-size: 1.25rem;
-            font-weight: 700;
-          }
-
-          .summary-status.complete {
-            color: var(--success);
-          }
-
-          .summary-status.warning {
-            color: var(--warning);
-          }
-
-          .summary-status.neutral {
-            color: var(--text-muted);
-          }
-
-          .success-actions {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
-          }
-
-          .success-actions .btn span {
-            margin-right: var(--space-sm);
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
-    <div className="export-screen">
-      <header className="screen-header">
-        <button onClick={goBack} className="btn btn-secondary btn-icon">
-          ←
+    <div className="min-h-screen bg-neutral-950 flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+        <button onClick={goBack} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2>📤 Export</h2>
+        <h2 className="text-white font-semibold flex items-center gap-2">
+          <Upload className="w-5 h-5" /> Export
+        </h2>
         <div></div>
       </header>
 
-      <div className="export-preview">
-        <div className="preview-card">
-          <h3>📋 Project Summary</h3>
+      <div className="flex-1 p-4">
+        <div className="bg-neutral-900 rounded-xl p-4">
+          <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+            <Video className="w-5 h-5" /> Project Summary
+          </h3>
           
-          <div className="preview-items">
-            <div className="preview-item">
-              <span className="item-icon">📹</span>
-              <div className="item-content">
-                <span className="item-label">Video Source</span>
-                <span className="item-status">
-                  {videoSrc ? '✓ Selected' : '✗ Not selected'}
-                </span>
+          <div className="space-y-3">
+            {[
+              { icon: Video, label: 'Video Source', status: videoSrc ? '✓ Ready' : '✗ Not selected' },
+              { icon: Type, label: 'Subtitles', status: subtitles.length > 0 ? `✓ ${subtitles.length} subtitle(s)` : '○ None' },
+              { icon: Music, label: 'Audio Voiceover', status: audioSrc ? '✓ Added' : '○ None' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg">
+                <item.icon className="w-5 h-5 text-neutral-400" />
+                <div className="flex-1">
+                  <span className="text-neutral-400 text-xs block">{item.label}</span>
+                  <span className="text-white text-sm font-medium">{item.status}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="preview-item">
-              <span className="item-icon">🎵</span>
-              <div className="item-content">
-                <span className="item-label">Audio Voiceover</span>
-                <span className="item-status">
-                  {audioSrc ? '✓ Added' : '○ Not added'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="preview-item">
-              <span className="item-icon">📝</span>
-              <div className="item-content">
-                <span className="item-label">Subtitles</span>
-                <span className="item-status">
-                  {subtitles.length} subtitle{subtitles.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+          <p className="text-blue-400 text-xs leading-relaxed">
+            <span className="font-semibold">FFmpeg.wasm</span> will process your video in the browser. 
+            Subtitles will be burned into the video and audio will be mixed automatically.
+          </p>
         </div>
       </div>
 
       {exportError && (
-        <div className="export-error">
-          <span className="error-icon">⚠️</span>
-          <span className="error-text">{exportError}</span>
+        <div className="mx-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+          <span className="text-red-400 text-sm">{exportError}</span>
         </div>
       )}
 
-      <div className="export-action">
+      <div className="p-4">
         <button 
           onClick={startExport} 
-          className="btn btn-primary btn-lg btn-glow"
+          className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!videoSrc}
         >
-          <span>🎬</span>
-          Export Final Video
+          <Video className="w-4 h-4" /> Export with FFmpeg
         </button>
         
         {!videoSrc && (
-          <p className="export-hint">Please select a video first</p>
+          <p className="text-neutral-500 text-xs text-center mt-2">Please select a video first</p>
         )}
       </div>
-
-      <style>{`
-        .export-screen {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg-primary);
-        }
-
-        .export-preview {
-          flex: 1;
-          padding: var(--space-lg);
-        }
-
-        .preview-card {
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          padding: var(--space-lg);
-        }
-
-        .preview-card h3 {
-          color: var(--text-primary);
-          margin-bottom: var(--space-lg);
-          padding-bottom: var(--space-md);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .preview-items {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-md);
-        }
-
-        .preview-item {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-          padding: var(--space-md);
-          background: var(--bg-secondary);
-          border-radius: var(--radius-md);
-        }
-
-        .item-icon {
-          font-size: 1.5rem;
-        }
-
-        .item-content {
-          flex: 1;
-        }
-
-        .item-label {
-          display: block;
-          color: var(--text-secondary);
-          font-size: 0.875rem;
-        }
-
-        .item-status {
-          color: var(--text-primary);
-          font-weight: 500;
-        }
-
-        .export-error {
-          margin: 0 var(--space-lg);
-          padding: var(--space-md);
-          background: rgba(229, 9, 20, 0.15);
-          border: 1px solid rgba(229, 9, 20, 0.3);
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-        }
-
-        .error-icon {
-          font-size: 1.25rem;
-        }
-
-        .error-text {
-          color: var(--primary-light);
-        }
-
-        .export-action {
-          padding: var(--space-xl);
-          text-align: center;
-        }
-
-        .export-hint {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-          margin-top: var(--space-md);
-        }
-      `}</style>
     </div>
   );
 };

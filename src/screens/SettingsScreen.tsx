@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProjectStore } from '../store/projectStore';
+import { ArrowLeft, Clapperboard, Info, Settings2, RotateCcw } from 'lucide-react';
 
 export const SettingsScreen: React.FC = () => {
   const { reset, setCurrentScreen } = useProjectStore();
@@ -10,192 +11,70 @@ export const SettingsScreen: React.FC = () => {
   }, []);
 
   return (
-    <div className="settings-screen">
-      <header className="screen-header">
-        <button onClick={() => setCurrentScreen('home')} className="btn btn-secondary btn-icon">
-          ←
+    <div className="min-h-screen bg-neutral-950 flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+        <button onClick={() => setCurrentScreen('home')} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2>⚙️ Settings</h2>
+        <h2 className="text-white font-semibold flex items-center gap-2">
+          <Settings2 className="w-5 h-5" /> Settings
+        </h2>
         <div></div>
       </header>
 
-      <div className={`settings-content ${isLoaded ? 'loaded' : ''}`}>
-        <div className="settings-section">
-          <h3 className="section-title">🏷️ App Info</h3>
-          <div className="settings-card">
-            <div className="info-row">
-              <span className="info-label">App Name</span>
-              <span className="info-value">MRecap</span>
+      <div className={`flex-1 p-4 space-y-6 transition-all duration-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+        {/* App Info */}
+        <div>
+          <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2 ml-1">App Info</p>
+          <div className="bg-neutral-900 rounded-xl p-4">
+            <div className="flex justify-between items-center py-2 border-b border-white/5">
+              <span className="text-neutral-400 text-sm">App Name</span>
+              <span className="text-white text-sm font-medium">MRecap</span>
             </div>
-            <div className="info-row">
-              <span className="info-label">Version</span>
-              <span className="info-value version">v1.0.0</span>
+            <div className="flex justify-between items-center py-2 border-b border-white/5">
+              <span className="text-neutral-400 text-sm">Version</span>
+              <span className="text-red-500 text-sm font-semibold">v1.0.0</span>
             </div>
-            <div className="info-row">
-              <span className="info-label">Platform</span>
-              <span className="info-value">Web (PWA)</span>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-neutral-400 text-sm">Platform</span>
+              <span className="text-white text-sm font-medium">Web (PWA)</span>
             </div>
           </div>
         </div>
 
-        <div className="settings-section">
-          <h3 className="section-title">ℹ️ About</h3>
-          <div className="settings-card about-card">
-            <div className="about-icon">🎬</div>
-            <p className="about-description">
-              Create stunning video recaps with subtitles and voiceover. 
-              Edit, export and share your creations with the world.
+        {/* About */}
+        <div>
+          <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2 ml-1">About</p>
+          <div className="bg-neutral-900 rounded-xl p-4 text-center">
+            <Clapperboard className="w-10 h-10 mx-auto mb-3 text-red-500" />
+            <p className="text-neutral-400 text-sm leading-relaxed mb-4">
+              Create stunning video recaps with subtitles and voiceover. Edit, export and share your creations.
             </p>
-            <div className="about-features">
-              <span className="feature-tag">📹 Video Editing</span>
-              <span className="feature-tag">📝 Subtitles</span>
-              <span className="feature-tag">🎙️ Voiceover</span>
-              <span className="feature-tag">📤 Export</span>
+            <div className="flex flex-wrap justify-center gap-2">
+              {['Video Editing', 'Subtitles', 'Voiceover', 'Export'].map((tag) => (
+                <span key={tag} className="px-3 py-1 bg-neutral-800 rounded-full text-xs text-neutral-500">{tag}</span>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="settings-section">
-          <h3 className="section-title">🛠️ Actions</h3>
-          <div className="settings-card">
-            <button onClick={reset} className="btn btn-secondary reset-btn">
-              <span>🔄</span>
-              Reset Application
+        {/* Actions */}
+        <div>
+          <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2 ml-1">Actions</p>
+          <div className="bg-neutral-900 rounded-xl p-4">
+            <button 
+              onClick={reset} 
+              className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" /> Reset Application
             </button>
-            <p className="reset-hint">Clear all data and start fresh</p>
+            <p className="text-neutral-500 text-xs text-center mt-2">Clear all data and start fresh</p>
           </div>
         </div>
 
-        <div className="settings-footer">
-          <p>Made with ❤️ for content creators</p>
-        </div>
+        {/* Footer */}
+        <p className="text-center text-neutral-500 text-sm py-4">Made with ❤️ for content creators</p>
       </div>
-
-      <style>{`
-        .settings-screen {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg-primary);
-        }
-
-        .settings-content {
-          flex: 1;
-          padding: var(--space-lg);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-xl);
-          opacity: 0;
-          transform: translateY(10px);
-          transition: all 0.4s ease;
-        }
-
-        .settings-content.loaded {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .settings-section {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-md);
-        }
-
-        .section-title {
-          color: var(--text-muted);
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          padding-left: var(--space-sm);
-        }
-
-        .settings-card {
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          padding: var(--space-lg);
-          border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-sm) 0;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .info-row:last-child {
-          border-bottom: none;
-        }
-
-        .info-label {
-          color: var(--text-secondary);
-          font-size: 0.875rem;
-        }
-
-        .info-value {
-          color: var(--text-primary);
-          font-weight: 500;
-        }
-
-        .info-value.version {
-          color: var(--primary);
-          font-weight: 600;
-        }
-
-        .about-card {
-          text-align: center;
-        }
-
-        .about-icon {
-          font-size: 3rem;
-          margin-bottom: var(--space-md);
-        }
-
-        .about-description {
-          color: var(--text-secondary);
-          margin-bottom: var(--space-lg);
-          line-height: 1.6;
-        }
-
-        .about-features {
-          display: flex;
-          flex-wrap: wrap;
-          gap: var(--space-sm);
-          justify-content: center;
-        }
-
-        .feature-tag {
-          padding: 6px 12px;
-          background: var(--bg-elevated);
-          border-radius: var(--radius-full);
-          font-size: 0.75rem;
-          color: var(--text-muted);
-        }
-
-        .reset-btn {
-          width: 100%;
-        }
-
-        .reset-btn span {
-          margin-right: var(--space-sm);
-        }
-
-        .reset-hint {
-          color: var(--text-muted);
-          font-size: 0.75rem;
-          text-align: center;
-          margin-top: var(--space-sm);
-        }
-
-        .settings-footer {
-          text-align: center;
-          padding: var(--space-xl);
-          color: var(--text-muted);
-          font-size: 0.875rem;
-        }
-      `}</style>
     </div>
   );
 };

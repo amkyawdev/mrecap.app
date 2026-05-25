@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { AudioWaveform } from '../components/AudioWaveform';
+import { ArrowLeft, Mic, Upload, Music, Square, ChevronRight, Volume2, RefreshCw, Check, ArrowRight } from 'lucide-react';
 
 export const AudioUploadScreen: React.FC = () => {
   const [mode, setMode] = useState<'upload' | 'record'>('upload');
@@ -39,124 +40,108 @@ export const AudioUploadScreen: React.FC = () => {
   };
 
   return (
-    <div className="audio-upload-screen">
-      <header className="screen-header">
-        <button onClick={goBack} className="btn btn-secondary btn-icon">
-          ←
+    <div className="min-h-screen bg-neutral-950 flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-white/5 bg-neutral-900/50">
+        <button onClick={goBack} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2>🎙️ Audio Voiceover</h2>
+        <h2 className="text-white font-semibold flex items-center gap-2">
+          <Mic className="w-5 h-5" /> Audio Voiceover
+        </h2>
         <div></div>
       </header>
 
       {!audioSrc ? (
-        <div className="upload-options">
-          <div className={`mode-tabs ${isLoaded ? 'loaded' : ''}`}>
+        <div className="flex-1 flex flex-col p-4">
+          <div className={`flex rounded-lg bg-neutral-900 p-1 mb-6 transition-all duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
             <button 
-              className={`tab ${mode === 'upload' ? 'active' : ''}`}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${mode === 'upload' ? 'bg-red-600 text-white' : 'text-neutral-400 hover:text-white'}`}
               onClick={() => setMode('upload')}
             >
-              <span className="tab-icon">📂</span>
-              <span className="tab-label">Upload MP3</span>
+              <Upload className="w-4 h-4" /> Upload MP3
             </button>
             <button 
-              className={`tab ${mode === 'record' ? 'active' : ''}`}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${mode === 'record' ? 'bg-red-600 text-white' : 'text-neutral-400 hover:text-white'}`}
               onClick={() => setMode('record')}
             >
-              <span className="tab-icon">🎤</span>
-              <span className="tab-label">Record Voice</span>
+              <Mic className="w-4 h-4" /> Record Voice
             </button>
           </div>
           
-          <div className="mode-content">
+          <div className="flex-1 flex flex-col items-center justify-center">
             {mode === 'upload' ? (
-              <div className="upload-section">
-                <div className="upload-box">
-                  <div className="upload-icon">🎵</div>
-                  <p className="upload-text">Select an MP3 file to add as voiceover</p>
+              <div className="text-center max-w-sm">
+                <div className="p-8 md:p-10 bg-neutral-900 border-2 border-dashed border-white/10 rounded-xl mb-4">
+                  <Music className="w-12 h-12 mx-auto mb-4 text-neutral-500" />
+                  <p className="text-neutral-500 text-sm mb-4">Select an MP3 file to add as voiceover</p>
                   
-                  <label className="btn btn-primary btn-lg">
-                    <span>📂</span>
-                    Browse Files
+                  <label className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm cursor-pointer">
+                    <FolderOpenIcon className="w-4 h-4" /> Browse Files
                     <input
                       type="file"
                       accept="audio/mpeg,audio/*"
                       onChange={handleUploadMP3}
-                      style={{ display: 'none' }}
+                      className="hidden"
                     />
                   </label>
                 </div>
                 
-                <div className="upload-formats">
-                  <span className="format-badge">MP3</span>
-                  <span className="format-badge">WAV</span>
-                  <span className="format-badge">M4A</span>
+                <div className="flex justify-center gap-2">
+                  <span className="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-500">MP3</span>
+                  <span className="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-500">WAV</span>
+                  <span className="px-2 py-1 bg-neutral-800 rounded text-xs text-neutral-500">M4A</span>
                 </div>
               </div>
             ) : (
-              <div className="record-section">
-                <div className={`record-visual ${isRecording ? 'recording' : ''}`}>
-                  <div className="record-circle">
-                    <span className="record-icon">{isRecording ? '🔴' : '🎤'}</span>
+              <div className="text-center">
+                <div className={`relative flex items-center justify-center mb-6 ${isRecording ? 'animate-pulse' : ''}`}>
+                  <div className={`w-28 h-28 md:w-32 md:h-32 bg-neutral-900 border-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'border-red-500 shadow-lg shadow-red-500/30' : 'border-white/10'}`}>
+                    <Mic className={`w-8 h-8 md:w-10 md:h-10 ${isRecording ? 'text-red-500' : 'text-neutral-400'}`} />
                   </div>
-                  {isRecording && (
-                    <div className="recording-pulse"></div>
-                  )}
+                  {isRecording && <div className="absolute inset-0 border-3 border-red-500 rounded-full animate-ping"></div>}
                 </div>
                 
                 {isRecording && (
-                  <div className="recording-info">
-                    <span className="recording-time">{formatDuration(recordingDuration)}</span>
-                    <span className="recording-label">Recording...</span>
+                  <div className="mb-4">
+                    <span className="text-2xl md:text-3xl font-bold text-red-500 tabular-nums">{formatDuration(recordingDuration)}</span>
+                    <p className="text-neutral-500 text-xs mt-1">Recording...</p>
                   </div>
                 )}
                 
-                <div className="record-controls">
-                  {isRecording ? (
-                    <button onClick={stopRecording} className="btn btn-primary btn-lg">
-                      <span>⏹</span>
-                      Stop Recording
-                    </button>
-                  ) : (
-                    <button onClick={startRecording} className="btn btn-primary btn-lg btn-glow">
-                      <span>🎤</span>
-                      Start Recording
-                    </button>
-                  )}
-                </div>
+                <button 
+                  onClick={isRecording ? stopRecording : startRecording} 
+                  className={`px-6 py-3 font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2 mx-auto ${isRecording ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white shadow-lg shadow-red-600/25'}`}
+                >
+                  {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {isRecording ? 'Stop Recording' : 'Start Recording'}
+                </button>
                 
-                <p className="record-hint">
-                  {isRecording ? 'Click to stop when finished' : 'Click to start recording your voice'}
-                </p>
+                <p className="text-neutral-500 text-xs mt-4">{isRecording ? 'Click to stop when finished' : 'Click to start recording your voice'}</p>
               </div>
             )}
           </div>
           
-          <div className="skip-option">
-            <button onClick={goToNext} className="btn btn-ghost">
-              Skip this step →
-            </button>
-          </div>
+          <button onClick={goToNext} className="mt-auto py-2 text-neutral-500 hover:text-white text-sm font-medium transition-colors text-center flex items-center justify-center gap-1">
+            Skip this step <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       ) : (
-        <div className="audio-preview">
-          <div className="audio-loaded">
-            <div className="audio-icon">✅</div>
-            <h3>Audio Added</h3>
-            {audioFile && <p className="audio-name">{audioFile.name}</p>}
+        <div className="flex-1 flex flex-col p-4 gap-4">
+          <div className="text-center p-6 bg-neutral-900 rounded-xl">
+            <Check className="w-10 h-10 mx-auto mb-2 text-green-500" />
+            <h3 className="text-white font-semibold mb-1">Audio Added</h3>
+            {audioFile && <p className="text-neutral-500 text-xs">{audioFile.name}</p>}
           </div>
           
-          <div className="waveform-section">
-            <AudioWaveform 
-              audioSrc={audioSrc} 
-              currentTime={0}
-            />
+          <div className="bg-neutral-900 rounded-xl p-3 min-h-24">
+            <AudioWaveform audioSrc={audioSrc} currentTime={0} />
           </div>
           
-          <div className="volume-section">
-            <div className="volume-header">
-              <span className="volume-icon">🔊</span>
-              <span className="volume-label">Volume</span>
-              <span className="volume-value">{Math.round(audioVolume * 100)}%</span>
+          <div className="bg-neutral-900 rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Volume2 className="w-5 h-5 text-neutral-400" />
+              <span className="flex-1 text-white font-medium text-sm">Volume</span>
+              <span className="text-red-500 font-bold tabular-nums text-sm">{Math.round(audioVolume * 100)}%</span>
             </div>
             <input
               type="range"
@@ -165,319 +150,30 @@ export const AudioUploadScreen: React.FC = () => {
               step="0.05"
               value={audioVolume}
               onChange={(e) => changeVolume(parseFloat(e.target.value))}
-              className="volume-slider"
+              className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-red-500"
             />
           </div>
           
-          <div className="audio-actions">
-            <button onClick={clearAudio} className="btn btn-secondary">
-              🔄 Change Audio
+          <div className="flex flex-col gap-3 mt-auto">
+            <button onClick={clearAudio} className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <RefreshCw className="w-4 h-4" /> Change Audio
             </button>
             
-            <button onClick={goToNext} className="btn btn-primary btn-lg">
-              Continue to Export
-              <span>→</span>
+            <button onClick={goToNext} className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2">
+              Continue to Export <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
-      
-      <style>{`
-        .audio-upload-screen {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: var(--bg-primary);
-        }
-
-        .upload-options {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          padding: var(--space-lg);
-        }
-
-        .mode-tabs {
-          display: flex;
-          gap: var(--space-sm);
-          padding: var(--space-xs);
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          margin-bottom: var(--space-xl);
-          opacity: 0;
-          transform: translateY(10px);
-          transition: all 0.4s ease;
-        }
-
-        .mode-tabs.loaded {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .mode-tabs .tab {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--space-sm);
-          padding: var(--space-md);
-          background: transparent;
-          border: none;
-          border-radius: var(--radius-md);
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .mode-tabs .tab.active {
-          background: var(--primary);
-          color: var(--text-primary);
-        }
-
-        .tab-icon {
-          font-size: 1.25rem;
-        }
-
-        .tab-label {
-          font-weight: 600;
-        }
-
-        .mode-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .upload-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-xl);
-        }
-
-        .upload-box {
-          text-align: center;
-          padding: var(--space-2xl);
-          background: var(--bg-card);
-          border: 2px dashed rgba(255,255,255,0.1);
-          border-radius: var(--radius-xl);
-          width: 100%;
-          max-width: 400px;
-        }
-
-        .upload-icon {
-          font-size: 4rem;
-          margin-bottom: var(--space-md);
-        }
-
-        .upload-text {
-          color: var(--text-muted);
-          margin-bottom: var(--space-lg);
-        }
-
-        .upload-formats {
-          display: flex;
-          gap: var(--space-sm);
-        }
-
-        .format-badge {
-          padding: 4px 12px;
-          background: var(--bg-elevated);
-          border-radius: var(--radius-sm);
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          font-weight: 600;
-        }
-
-        .record-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-xl);
-        }
-
-        .record-visual {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .record-circle {
-          width: 120px;
-          height: 120px;
-          background: var(--bg-card);
-          border: 3px solid rgba(255,255,255,0.1);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all var(--transition-normal);
-        }
-
-        .record-visual.recording .record-circle {
-          border-color: var(--primary);
-          box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
-        }
-
-        .record-icon {
-          font-size: 3rem;
-        }
-
-        .recording-pulse {
-          position: absolute;
-          inset: 0;
-          border: 3px solid var(--primary);
-          border-radius: 50%;
-          animation: recordingPulse 1.5s ease infinite;
-        }
-
-        @keyframes recordingPulse {
-          0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(1.3); opacity: 0; }
-        }
-
-        .recording-info {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-xs);
-        }
-
-        .recording-time {
-          font-size: 2.5rem;
-          font-weight: 700;
-          color: var(--primary);
-          font-variant-numeric: tabular-nums;
-        }
-
-        .recording-label {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-        }
-
-        .record-controls {
-          display: flex;
-          gap: var(--space-md);
-        }
-
-        .record-hint {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-        }
-
-        .skip-option {
-          margin-top: var(--space-xl);
-          text-align: center;
-        }
-
-        .audio-preview {
-          flex: 1;
-          padding: var(--space-lg);
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-lg);
-        }
-
-        .audio-loaded {
-          text-align: center;
-          padding: var(--space-xl);
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-        }
-
-        .audio-icon {
-          font-size: 3rem;
-          margin-bottom: var(--space-sm);
-        }
-
-        .audio-loaded h3 {
-          color: var(--text-primary);
-          margin-bottom: var(--space-xs);
-        }
-
-        .audio-name {
-          color: var(--text-muted);
-          font-size: 0.875rem;
-        }
-
-        .waveform-section {
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          padding: var(--space-md);
-          min-height: 100px;
-        }
-
-        .volume-section {
-          background: var(--bg-card);
-          border-radius: var(--radius-lg);
-          padding: var(--space-lg);
-        }
-
-        .volume-header {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-          margin-bottom: var(--space-md);
-        }
-
-        .volume-icon {
-          font-size: 1.5rem;
-        }
-
-        .volume-label {
-          flex: 1;
-          color: var(--text-primary);
-          font-weight: 600;
-        }
-
-        .volume-value {
-          color: var(--primary);
-          font-weight: 700;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .volume-slider {
-          width: 100%;
-          height: 8px;
-          -webkit-appearance: none;
-          appearance: none;
-          background: var(--bg-elevated);
-          border-radius: var(--radius-full);
-          outline: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 20px;
-          height: 20px;
-          background: var(--primary);
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: var(--shadow-md);
-        }
-
-        .audio-actions {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-md);
-          margin-top: auto;
-        }
-
-        .audio-actions .btn span {
-          margin-left: var(--space-xs);
-        }
-
-        @media (max-width: 480px) {
-          .mode-tabs {
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 };
+
+// Simple folder icon component
+const FolderOpenIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+  </svg>
+);
 
 export default AudioUploadScreen;

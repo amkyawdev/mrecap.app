@@ -10,6 +10,7 @@ export function useExport() {
     videoSrc,
     audioSrc,
     subtitles,
+    audioVolume,
     exportProgress,
     exportedVideoSrc,
     setExportProgress,
@@ -23,40 +24,33 @@ export function useExport() {
     
     setIsExporting(true);
     setExportError(null);
+    setExportProgress(0);
     
     try {
+      // Convert subtitles to SRT format
       const srtContent = subtitles.length > 0 
-        ? subtitles.map(s => `${s.id}\n${s.startTime} --> ${s.endTime}\n${s.text}`).join('\n\n')
-        : null;
+        ? ExportService.subtitlesToSRT(subtitles)
+        : undefined;
       
-      // Create blob for srt if needed
-      let srtBlob: Blob | null = null;
-      if (srtContent) {
-        srtBlob = new Blob([srtContent], { type: 'text/plain' });
-      }
-      
-      // Would export using FFmpeg in real implementation
-      // For now just simulate progress
-      const mockSrtPath = srtBlob ? URL.createObjectURL(srtBlob) : undefined;
-      
-      await ExportService.export({
-        videoPath: videoSrc,
-        srtPath: mockSrtPath,
-        audioPath: audioSrc || undefined,
-        onProgress: (progress) => {
+      // Export using FFmpeg
+      const outputUrl = await ExportService.export({
+        videoUrl: videoSrc,
+        subtitleContent: srtContent,
+        audioUrl: audioSrc || undefined,
+        audioVolume: audioVolume,
+        onProgress: (progress, message) => {
           setExportProgress(progress);
         },
       });
       
-      // Mock exported video (use original for demo)
-      setExportedVideoSrc(videoSrc);
+      setExportedVideoSrc(outputUrl);
     } catch (error) {
       console.error('Export failed:', error);
-      setExportError('Failed to export video');
+      setExportError('Failed to export video. Please try again.');
     } finally {
       setIsExporting(false);
     }
-  }, [videoSrc, audioSrc, subtitles, setExportProgress, setExportedVideoSrc]);
+  }, [videoSrc, audioSrc, subtitles, audioVolume, setExportProgress, setExportedVideoSrc]);
 
   const shareVideo = useCallback(async () => {
     if (!exportedVideoSrc) return;
