@@ -26,7 +26,7 @@ const PRESET_COLORS = [
 ];
 
 export const TextOverlayEditor: React.FC = () => {
-  const { subtitles, setSubtitles } = useTimelineStore();
+  const { subtitles } = useTimelineStore();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
