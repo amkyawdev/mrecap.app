@@ -1,6 +1,7 @@
 // Screens barrel export
 export * from './HomeScreen';
 export * from './VideoEditorScreen';
+export * from './FullEditorScreen';
 export * from './SubtitleEditorScreen';
 export * from './AudioUploadScreen';
 export * from './ExportScreen';

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { HomeScreen } from '../screens/HomeScreen';
 import { VideoEditorScreen } from '../screens/VideoEditorScreen';
+import { FullEditorScreen } from '../screens/FullEditorScreen';
 import { SubtitleEditorScreen } from '../screens/SubtitleEditorScreen';
 import { AudioUploadScreen } from '../screens/AudioUploadScreen';
 import { ExportScreen } from '../screens/ExportScreen';
@@ -26,6 +27,8 @@ export default function App() {
     switch (currentScreen) {
       case 'video':
         return <VideoEditorScreen />;
+      case 'fullEditor':
+        return <FullEditorScreen />;
       case 'subtitle':
         return <SubtitleEditorScreen />;
       case 'audio':
