@@ -100,21 +100,20 @@ export const HomeScreen: React.FC = () => {
         </div>
 
         {/* Feature Cards */}
-        <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-10 md:mt-16 w-full max-w-2xl md:max-w-3xl transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mt-10 md:mt-16 w-full max-w-2xl md:max-w-3xl transition-all duration-700 delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {[
-            { icon: Wand2, title: 'Full Editor', desc: 'VN/CapCut style', color: 'from-red-500 to-orange-500' },
+            { icon: Wand2, title: 'Full Editor', desc: 'Professional tools', onClick: handleFullEditor },
             { icon: Video, title: 'Quick Edit', desc: 'Simple workflow' },
             { icon: Type, title: 'Subtitles', desc: 'Add & edit text' },
             { icon: Mic, title: 'Voiceover', desc: 'Record audio' },
-            { icon: Download, title: 'Export', desc: 'Share your work' },
           ].map((feature, i) => (
             <div 
               key={i} 
-              className={`bg-neutral-900/80 border border-white/5 rounded-xl p-4 md:p-5 text-center hover:border-red-500/30 hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-1 ${i === 0 ? 'md:col-span-1 bg-gradient-to-br from-red-900/50 to-neutral-900' : ''}`}
-              onClick={i === 0 ? handleFullEditor : undefined}
-              style={{ cursor: i === 0 ? 'pointer' : 'default' }}
+              className="bg-neutral-900/80 border border-white/5 rounded-xl p-4 md:p-5 text-center hover:border-red-500/30 hover:bg-neutral-900 transition-all duration-200 hover:-translate-y-1"
+              onClick={feature.onClick}
+              style={{ cursor: feature.onClick ? 'pointer' : 'default' }}
             >
-              <feature.icon className={`w-6 h-6 md:w-7 md:h-7 mx-auto mb-2 ${i === 0 ? 'text-orange-400' : 'text-red-400'}`} />
+              <feature.icon className="w-6 h-6 md:w-7 md:h-7 mx-auto mb-2 text-red-400" />
               <h3 className="text-white font-semibold text-sm md:text-base mb-1">{feature.title}</h3>
               <p className="text-neutral-500 text-xs">{feature.desc}</p>
             </div>
