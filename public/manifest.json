@@ -1,0 +1,27 @@
+{
+  "name": "Movie Recap Editor",
+  "short_name": "MovieRecap",
+  "description": "Edit videos with subtitles and voiceover - Movie Recap App",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#FF0000",
+  "background_color": "#FF0000",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["entertainment", "video", "photo"],
+  "prefer_related_applications": false
+}

@@ -1,0 +1,39 @@
+{
+  "name": "mrecap-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/native-stack": "^6.11.0",
+    "expo": "~50.0.0",
+    "expo-av": "~13.10.0",
+    "expo-document-picker": "~11.10.0",
+    "expo-file-system": "~16.0.0",
+    "expo-media-library": "~15.9.0",
+    "expo-sharing": "~11.10.0",
+    "next": "14.2.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.73.2",
+    "react-native-slider": "^0.11.0",
+    "react-native-video": "^6.0.0",
+    "react-native-web": "^0.19.10",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.2.0",
+    "typescript": "^5.3.3"
+  }
+}
