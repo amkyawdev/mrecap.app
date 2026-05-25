@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSubtitleEditor } from '../hooks/useSubtitleEditor';
 import { useProjectStore } from '../store/projectStore';
 import { VideoPlayer } from '../components/VideoPlayer';
@@ -27,6 +27,12 @@ export const SubtitleEditorScreen: React.FC = () => {
     goBack,
   } = useSubtitleEditor();
 
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
   const handleLoadSRT = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -48,16 +54,16 @@ export const SubtitleEditorScreen: React.FC = () => {
 
   return (
     <div className="subtitle-editor-screen">
-      <div className="header">
-        <button onClick={goBack} className="btn btn-secondary">
-          ← Back
+      <header className="screen-header">
+        <button onClick={goBack} className="btn btn-secondary btn-icon">
+          ←
         </button>
         <h2>📝 Subtitle Editor</h2>
-        <button onClick={downloadSRT} className="btn btn-secondary">
-          💾 Export SRT
+        <button onClick={downloadSRT} className="btn btn-ghost btn-sm">
+          💾 Export
         </button>
-      </div>
-      
+      </header>
+
       <div className="video-preview">
         {videoSrc && (
           <VideoPlayer
@@ -73,73 +79,136 @@ export const SubtitleEditorScreen: React.FC = () => {
           />
         )}
       </div>
-      
-      <div className="subtitle-controls">
-        <button onClick={togglePlay} className="btn btn-primary">
-          {playing ? '⏸ Pause' : '▶ Play'}
+
+      <div className="subtitle-toolbar">
+        <button onClick={togglePlay} className="btn btn-secondary btn-icon">
+          {playing ? '⏸' : '▶'}
         </button>
         
-        <label className="btn btn-secondary">
-          📂 Load SRT
-          <input
-            type="file"
-            accept=".srt"
-            onChange={handleLoadSRT}
-            style={{ display: 'none' }}
-          />
-        </label>
+        <div className="toolbar-actions">
+          <label className="btn btn-secondary btn-sm">
+            📂 Import SRT
+            <input
+              type="file"
+              accept=".srt"
+              onChange={handleLoadSRT}
+              style={{ display: 'none' }}
+            />
+          </label>
+          
+          <button onClick={addNewSubtitle} className="btn btn-primary btn-sm">
+            ➕ Add Subtitle
+          </button>
+        </div>
       </div>
-      
-      <SubtitleList
-        subtitles={subtitles}
-        currentTime={currentTime}
-        onSelect={handleSelectSubtitle}
-        onUpdate={editSubtitle}
-        onDelete={removeSubtitle}
-        onAdd={addNewSubtitle}
-        videoDuration={videoDuration}
-      />
-      
-      <div className="footer">
-        <button onClick={goToNext} className="btn btn-primary">
-          Next: Audio →
+
+      <div className="subtitle-stats">
+        <span className="stat-item">
+          📝 {subtitles.length} subtitle{subtitles.length !== 1 ? 's' : ''}
+        </span>
+        <span className="stat-item">
+          ⏱️ {formatDuration(videoDuration)}
+        </span>
+      </div>
+
+      <div className={`subtitle-list-container ${isLoaded ? 'loaded' : ''}`}>
+        <SubtitleList
+          subtitles={subtitles}
+          currentTime={currentTime}
+          onSelect={handleSelectSubtitle}
+          onUpdate={editSubtitle}
+          onDelete={removeSubtitle}
+          onAdd={addNewSubtitle}
+          videoDuration={videoDuration}
+        />
+      </div>
+
+      <div className="screen-footer">
+        <button onClick={goToNext} className="btn btn-primary btn-lg">
+          Continue to Audio
+          <span>→</span>
         </button>
       </div>
-      
+
       <style>{`
         .subtitle-editor-screen {
           min-height: 100vh;
-          background: #FF0000;
           display: flex;
           flex-direction: column;
+          background: var(--bg-primary);
         }
-        .header {
+
+        .video-preview {
+          background: #000;
+          aspect-ratio: 16/9;
+          position: relative;
+        }
+
+        .subtitle-toolbar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px;
-          background: rgba(0,0,0,0.3);
+          padding: var(--space-md) var(--space-lg);
+          background: var(--bg-secondary);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .header h2 {
-          color: white;
-          margin: 0;
-        }
-        .video-preview {
-          background: black;
-          aspect-ratio: 16/9;
-        }
-        .subtitle-controls {
+
+        .toolbar-actions {
           display: flex;
-          gap: 12px;
-          padding: 16px;
+          gap: var(--space-sm);
         }
-        .footer {
-          padding: 16px;
-          background: rgba(0,0,0,0.3);
+
+        .subtitle-stats {
+          display: flex;
+          gap: var(--space-lg);
+          padding: var(--space-md) var(--space-lg);
+          background: var(--bg-card);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-item {
+          font-size: 0.875rem;
+          color: var(--text-muted);
+          display: flex;
+          align-items: center;
+          gap: var(--space-xs);
+        }
+
+        .subtitle-list-container {
+          flex: 1;
+          overflow-y: auto;
+          opacity: 0;
+          transform: translateY(10px);
+          transition: all 0.4s ease;
+        }
+
+        .subtitle-list-container.loaded {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .screen-footer {
+          padding: var(--space-lg);
+          background: var(--bg-secondary);
+          border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .screen-footer .btn {
+          width: 100%;
+        }
+
+        .screen-footer .btn span {
+          margin-left: var(--space-xs);
         }
       `}</style>
     </div>
   );
 };
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 export default SubtitleEditorScreen;

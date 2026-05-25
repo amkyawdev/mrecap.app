@@ -23,6 +23,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
 
   useImperativeHandle(ref, () => videoRef.current!, []);
 
@@ -63,6 +64,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     };
   }, [onTimeUpdate, onEnded, onLoadedMetadata]);
 
+  // Auto-hide controls after 3 seconds of inactivity
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (playing && showControls) {
+      timeout = setTimeout(() => setShowControls(false), 3000);
+    }
+    return () => clearTimeout(timeout);
+  }, [playing, showControls]);
+
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -95,34 +105,254 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     setMuted(!muted);
   }, [muted]);
 
+  const handleVideoClick = () => {
+    setShowControls(true);
+    togglePlay();
+  };
+
   return (
-    <div className="video-player-container">
-      <video
-        ref={videoRef}
-        src={src}
-        autoPlay={autoPlay}
-        playsInline
-        style={{
-          width: '100%',
-          backgroundColor: '#000',
-        }}
-      />
-      
-      {overlay && <div className="video-overlay">{overlay}</div>}
-      
-      <div className="video-controls">
-        <button onClick={togglePlay} className="btn btn-secondary">
-          {playing ? '⏸ Pause' : '▶ Play'}
-        </button>
+    <div 
+      className="video-player-container"
+      onMouseMove={() => setShowControls(true)}
+    >
+      <div className="video-wrapper" onClick={handleVideoClick}>
+        <video
+          ref={videoRef}
+          src={src}
+          autoPlay={autoPlay}
+          playsInline
+          muted={muted}
+          style={{
+            width: '100%',
+            backgroundColor: '#000',
+            cursor: 'pointer',
+          }}
+        />
         
-        <span className="time-display">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </span>
+        {overlay && <div className="video-overlay">{overlay}</div>}
         
-        <button onClick={toggleMute} className="btn btn-secondary">
-          {muted ? '🔇' : '🔊'}
-        </button>
+        {/* Play indicator */}
+        {!playing && (
+          <div className="play-indicator">
+            <span>▶</span>
+          </div>
+        )}
       </div>
+
+      <div className={`video-controls ${showControls ? 'visible' : ''}`}>
+        <div className="controls-progress">
+          <div 
+            className="progress-track"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pos = (e.clientX - rect.left) / rect.width;
+              seek(pos * duration);
+            }}
+          >
+            <div 
+              className="progress-fill"
+              style={{ width: `${(currentTime / duration) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="controls-row">
+          <div className="controls-left">
+            <button 
+              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+              className="control-btn"
+              aria-label={playing ? 'Pause' : 'Play'}
+            >
+              {playing ? '⏸' : '▶'}
+            </button>
+
+            <span className="time-display">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          <div className="controls-right">
+            <div className="volume-group">
+              <button 
+                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+                className="control-btn"
+                aria-label={muted ? 'Unmute' : 'Mute'}
+              >
+                {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  const val = parseFloat(e.target.value);
+                  changeVolume(val);
+                  if (val > 0 && muted) toggleMute();
+                }}
+                className="volume-slider"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .video-player-container {
+          position: relative;
+          width: 100%;
+          background: #000;
+        }
+
+        .video-wrapper {
+          position: relative;
+          width: 100%;
+        }
+
+        .video-overlay {
+          position: absolute;
+          bottom: 60px;
+          left: 0;
+          right: 0;
+          text-align: center;
+          pointer-events: none;
+        }
+
+        .play-indicator {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 80px;
+          height: 80px;
+          background: rgba(0, 0, 0, 0.6);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          color: white;
+          pointer-events: none;
+          opacity: 0.8;
+        }
+
+        .video-controls {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: linear-gradient(transparent, rgba(0,0,0,0.8));
+          padding: var(--space-md);
+          opacity: 0;
+          transition: opacity var(--transition-fast);
+        }
+
+        .video-controls.visible {
+          opacity: 1;
+        }
+
+        .controls-progress {
+          margin-bottom: var(--space-sm);
+        }
+
+        .progress-track {
+          height: 4px;
+          background: rgba(255,255,255,0.3);
+          border-radius: var(--radius-full);
+          cursor: pointer;
+          position: relative;
+        }
+
+        .progress-track:hover {
+          height: 6px;
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: var(--primary);
+          border-radius: var(--radius-full);
+          position: relative;
+        }
+
+        .progress-fill::after {
+          content: '';
+          position: absolute;
+          right: -6px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 12px;
+          height: 12px;
+          background: var(--primary);
+          border-radius: 50%;
+          opacity: 0;
+          transition: opacity var(--transition-fast);
+        }
+
+        .progress-track:hover .progress-fill::after {
+          opacity: 1;
+        }
+
+        .controls-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .controls-left, .controls-right {
+          display: flex;
+          align-items: center;
+          gap: var(--space-md);
+        }
+
+        .control-btn {
+          background: transparent;
+          border: none;
+          color: white;
+          font-size: 1.25rem;
+          cursor: pointer;
+          padding: var(--space-xs);
+          border-radius: var(--radius-sm);
+          transition: all var(--transition-fast);
+        }
+
+        .control-btn:hover {
+          background: rgba(255,255,255,0.2);
+        }
+
+        .time-display {
+          color: white;
+          font-size: 0.875rem;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .volume-group {
+          display: flex;
+          align-items: center;
+          gap: var(--space-xs);
+        }
+
+        .volume-slider {
+          width: 80px;
+          height: 4px;
+          -webkit-appearance: none;
+          appearance: none;
+          background: rgba(255,255,255,0.3);
+          border-radius: var(--radius-full);
+          cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-radius: 50%;
+          cursor: pointer;
+        }
+      `}</style>
     </div>
   );
 });
