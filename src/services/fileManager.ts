@@ -128,7 +128,7 @@ export class FileManager {
    * Clear all cached files
    */
   static clearCache(): void {
-    for (const [, metadata] of this.storage) {
+    for (const metadata of Array.from(this.storage.values())) {
       if (metadata.uri) {
         URL.revokeObjectURL(metadata.uri);
       }
