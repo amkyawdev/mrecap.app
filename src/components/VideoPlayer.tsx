@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { Play, Pause, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 
 interface VideoPlayerProps {
   src: string;
@@ -18,12 +19,14 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   autoPlay = false,
 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<number>(16 / 9);
 
   useImperativeHandle(ref, () => videoRef.current!, []);
 
@@ -39,6 +42,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
       onLoadedMetadata?.(video.duration);
+      // Calculate aspect ratio
+      if (video.videoWidth && video.videoHeight) {
+        setVideoAspectRatio(video.videoWidth / video.videoHeight);
+      }
     };
 
     const handleEnded = () => {
@@ -105,80 +112,109 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     setMuted(!muted);
   }, [muted]);
 
+  const handleFullscreen = () => {
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        containerRef.current.requestFullscreen();
+      }
+    }
+  };
+
   const handleVideoClick = () => {
     setShowControls(true);
     togglePlay();
   };
 
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
     <div 
-      className="video-player-container"
+      ref={containerRef}
+      className="relative w-full bg-black rounded-lg overflow-hidden group"
       onMouseMove={() => setShowControls(true)}
     >
-      <div className="video-wrapper" onClick={handleVideoClick}>
-        <video
-          ref={videoRef}
-          src={src}
-          autoPlay={autoPlay}
-          playsInline
-          muted={muted}
-          style={{
-            width: '100%',
-            backgroundColor: '#000',
-            cursor: 'pointer',
-          }}
-        />
-        
-        {overlay && <div className="video-overlay">{overlay}</div>}
-        
-        {/* Play indicator */}
-        {!playing && (
-          <div className="play-indicator">
-            <span>▶</span>
-          </div>
-        )}
+      {/* Video with Aspect Ratio Container */}
+      <div 
+        className="relative w-full bg-black"
+        style={{ 
+          paddingBottom: `${(1 / videoAspectRatio) * 100}%`,
+          maxHeight: '70vh'
+        }}
+      >
+        <div className="absolute inset-0">
+          <video
+            ref={videoRef}
+            src={src}
+            autoPlay={autoPlay}
+            playsInline
+            muted={muted}
+            onClick={handleVideoClick}
+            className="w-full h-full object-contain cursor-pointer"
+          />
+          
+          {/* Overlay for subtitles */}
+          {overlay && (
+            <div className="absolute inset-0 pointer-events-none">
+              {overlay}
+            </div>
+          )}
+          
+          {/* Play/Pause Indicator */}
+          {!playing && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
+                <Play className="w-8 h-8 text-white fill-white" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className={`video-controls ${showControls ? 'visible' : ''}`}>
-        <div className="controls-progress">
+      {/* Controls Bar */}
+      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        {/* Progress Bar */}
+        <div 
+          className="w-full h-1 bg-white/30 rounded-full cursor-pointer mb-3 group/progress hover:h-1.5 transition-all"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            seek(pos * duration);
+          }}
+        >
           <div 
-            className="progress-track"
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const pos = (e.clientX - rect.left) / rect.width;
-              seek(pos * duration);
-            }}
+            className="h-full bg-red-500 rounded-full relative"
+            style={{ width: `${progress}%` }}
           >
-            <div 
-              className="progress-fill"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity" />
           </div>
         </div>
 
-        <div className="controls-row">
-          <div className="controls-left">
+        {/* Controls Row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button 
               onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-              className="control-btn"
-              aria-label={playing ? 'Pause' : 'Play'}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
             >
-              {playing ? '⏸' : '▶'}
+              {playing ? (
+                <Pause className="w-5 h-5 text-white" />
+              ) : (
+                <Play className="w-5 h-5 text-white fill-white" />
+              )}
             </button>
 
-            <span className="time-display">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          </div>
-
-          <div className="controls-right">
-            <div className="volume-group">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                className="control-btn"
-                aria-label={muted ? 'Unmute' : 'Mute'}
+                className="p-1 hover:bg-white/20 rounded transition-colors"
               >
-                {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+                {muted || volume === 0 ? (
+                  <VolumeX className="w-4 h-4 text-white" />
+                ) : (
+                  <Volume2 className="w-4 h-4 text-white" />
+                )}
               </button>
               <input
                 type="range"
@@ -187,172 +223,27 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
                 step="0.1"
                 value={muted ? 0 : volume}
                 onChange={(e) => {
-                  e.stopPropagation();
                   const val = parseFloat(e.target.value);
                   changeVolume(val);
                   if (val > 0 && muted) toggleMute();
                 }}
-                className="volume-slider"
-                onClick={(e) => e.stopPropagation()}
+                className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
               />
             </div>
+
+            <span className="text-white/80 text-sm font-mono">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
           </div>
+
+          <button 
+            onClick={handleFullscreen}
+            className="p-2 hover:bg-white/20 rounded-full transition-colors"
+          >
+            <Maximize2 className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
-
-      <style>{`
-        .video-player-container {
-          position: relative;
-          width: 100%;
-          background: #000;
-        }
-
-        .video-wrapper {
-          position: relative;
-          width: 100%;
-        }
-
-        .video-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          pointer-events: none;
-        }
-
-        .play-indicator {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 80px;
-          height: 80px;
-          background: rgba(0, 0, 0, 0.6);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          color: white;
-          pointer-events: none;
-          opacity: 0.8;
-        }
-
-        .video-controls {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: linear-gradient(transparent, rgba(0,0,0,0.8));
-          padding: var(--space-md);
-          opacity: 0;
-          transition: opacity var(--transition-fast);
-        }
-
-        .video-controls.visible {
-          opacity: 1;
-        }
-
-        .controls-progress {
-          margin-bottom: var(--space-sm);
-        }
-
-        .progress-track {
-          height: 4px;
-          background: rgba(255,255,255,0.3);
-          border-radius: var(--radius-full);
-          cursor: pointer;
-          position: relative;
-        }
-
-        .progress-track:hover {
-          height: 6px;
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: var(--primary);
-          border-radius: var(--radius-full);
-          position: relative;
-        }
-
-        .progress-fill::after {
-          content: '';
-          position: absolute;
-          right: -6px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 12px;
-          height: 12px;
-          background: var(--primary);
-          border-radius: 50%;
-          opacity: 0;
-          transition: opacity var(--transition-fast);
-        }
-
-        .progress-track:hover .progress-fill::after {
-          opacity: 1;
-        }
-
-        .controls-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .controls-left, .controls-right {
-          display: flex;
-          align-items: center;
-          gap: var(--space-md);
-        }
-
-        .control-btn {
-          background: transparent;
-          border: none;
-          color: white;
-          font-size: 1.25rem;
-          cursor: pointer;
-          padding: var(--space-xs);
-          border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
-        }
-
-        .control-btn:hover {
-          background: rgba(255,255,255,0.2);
-        }
-
-        .time-display {
-          color: white;
-          font-size: 0.875rem;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .volume-group {
-          display: flex;
-          align-items: center;
-          gap: var(--space-xs);
-        }
-
-        .volume-slider {
-          width: 80px;
-          height: 4px;
-          -webkit-appearance: none;
-          appearance: none;
-          background: rgba(255,255,255,0.3);
-          border-radius: var(--radius-full);
-          cursor: pointer;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 12px;
-          height: 12px;
-          background: white;
-          border-radius: 50%;
-          cursor: pointer;
-        }
-      `}</style>
     </div>
   );
 });
