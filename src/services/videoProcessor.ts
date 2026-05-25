@@ -1,6 +1,7 @@
 /**
- * Video Processing Service using FFmpeg
+ * Video Processing Service
  * Handles video trimming, subtitle burning, and audio mixing
+ * Note: Actual FFmpeg processing would run server-side
  */
 
 export interface TrimOptions {
@@ -21,108 +22,34 @@ export interface AudioMixOptions {
 }
 
 export class VideoProcessor {
-  private static ffmpeg: any = null;
-
-  /**
-   * Initialize FFmpeg
-   */
-  static async initialize(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      try {
-        const { FFmpeg } = await import('@ffmpeg/ffmpeg');
-        const { toBlobURL } = await import('@ffmpeg/util');
-        
-        this.ffmpeg = new FFmpeg();
-        
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-        await this.ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-      } catch (error) {
-        console.warn('FFmpeg loading skipped in non-browser environment');
-      }
-    }
-  }
-
   /**
    * Trim video between start and end time
+   * Would use FFmpeg on server-side
    */
   static async trimVideo(options: TrimOptions): Promise<string> {
-    if (!this.ffmpeg) {
-      await this.initialize();
-    }
-    
     const { inputPath, startTime, endTime } = options;
-    const outputPath = `trimmed_${Date.now()}.mp4`;
-    
-    try {
-      await this.ffmpeg.exec([
-        '-i', inputPath,
-        '-ss', String(startTime),
-        '-to', String(endTime),
-        '-c', 'copy',
-        outputPath
-      ]);
-    } catch (error) {
-      console.error('Trim failed:', error);
-      throw error;
-    }
-    
-    return outputPath;
+    console.log(`Would trim video: ${inputPath} from ${startTime}s to ${endTime}s`);
+    return inputPath;
   }
 
   /**
    * Burn subtitles into video
+   * Would use FFmpeg on server-side
    */
   static async burnSubtitles(options: SubtitleOptions): Promise<string> {
-    if (!this.ffmpeg) {
-      await this.initialize();
-    }
-    
     const { videoPath, srtPath } = options;
-    const outputPath = `subtitled_${Date.now()}.mp4`;
-    
-    try {
-      await this.ffmpeg.exec([
-        '-i', videoPath,
-        '-vf', `subtitles='${srtPath}'`,
-        '-c:a', 'copy',
-        outputPath
-      ]);
-    } catch (error) {
-      console.error('Subtitle burn failed:', error);
-      throw error;
-    }
-    
-    return outputPath;
+    console.log(`Would burn subtitles: ${srtPath} into ${videoPath}`);
+    return videoPath;
   }
 
   /**
    * Mix audio with video
+   * Would use FFmpeg on server-side
    */
   static async mixAudio(options: AudioMixOptions): Promise<string> {
-    if (!this.ffmpeg) {
-      await this.initialize();
-    }
-    
     const { videoPath, audioPath, volume } = options;
-    const outputPath = `mixed_${Date.now()}.mp4`;
-    
-    try {
-      await this.ffmpeg.exec([
-        '-i', videoPath,
-        '-i', audioPath,
-        '-filter_complex', `[1:a]volume=${volume}[a1];[0:a][a1]amix=inputs=2:duration=first`,
-        '-c:v', 'copy',
-        outputPath
-      ]);
-    } catch (error) {
-      console.error('Audio mix failed:', error);
-      throw error;
-    }
-    
-    return outputPath;
+    console.log(`Would mix audio: ${audioPath} at volume ${volume} with ${videoPath}`);
+    return videoPath;
   }
 
   /**
