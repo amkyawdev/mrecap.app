@@ -1,6 +1,6 @@
 /**
  * Export Service
- * Handles exporting final video with all effects applied using FFmpeg.wasm
+ * Fast video export with optimized FFmpeg processing
  */
 
 import { SubtitleStyle } from '../store/projectStore';
@@ -11,8 +11,17 @@ export interface ExportOptions {
   subtitleStyle?: SubtitleStyle;
   audioUrl?: string;
   audioVolume?: number;
-  onProgress?: (progress: number, message: string) => void;
+  quality?: 'ultra-fast' | 'fast' | 'balanced' | 'high-quality';
+  onProgress?: (progress: number, message?: string) => void;
 }
+
+// Quality presets for fast export
+const QUALITY_PRESETS = {
+  'ultra-fast': { preset: 'ultrafast', crf: 28, audioBitrate: '96k' },
+  'fast': { preset: 'veryfast', crf: 26, audioBitrate: '128k' },
+  'balanced': { preset: 'medium', crf: 23, audioBitrate: '192k' },
+  'high-quality': { preset: 'slow', crf: 20, audioBitrate: '256k' },
+};
 
 export class ExportService {
   private static progress = 0;
@@ -20,21 +29,19 @@ export class ExportService {
   private static ffmpegLoaded = false;
 
   /**
-   * Initialize FFmpeg
+   * Initialize FFmpeg with caching
    */
-  static async initFFmpeg(onProgress?: (progress: number) => void): Promise<boolean> {
+  static async initFFmpeg(onProgress?: (progress: number, message?: string) => void): Promise<boolean> {
     if (this.ffmpegLoaded && this.ffmpeg) return true;
 
     try {
-      onProgress?.(5);
+      onProgress?.(5, 'Loading video processor...');
       
-      // Dynamic import for FFmpeg
       const { FFmpeg } = await import('@ffmpeg/ffmpeg');
       const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
 
       this.ffmpeg = new FFmpeg();
       
-      // Load FFmpeg core
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
       await this.ffmpeg.load({
         coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
@@ -42,7 +49,7 @@ export class ExportService {
       });
 
       this.ffmpegLoaded = true;
-      onProgress?.(20);
+      onProgress?.(15, 'Video processor ready!');
       return true;
     } catch (error) {
       console.error('FFmpeg init failed:', error);
@@ -51,134 +58,129 @@ export class ExportService {
   }
 
   /**
-   * Export final video with FFmpeg processing
+   * Quick export - Skip FFmpeg for simple cases (no subtitles/audio)
+   */
+  static async quickExport(videoUrl: string): Promise<string> {
+    // For videos without modifications, just return the original
+    const response = await fetch(videoUrl);
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  /**
+   * Fast export with optimized settings
    */
   static async export(options: ExportOptions): Promise<string> {
-    const { videoUrl, subtitleContent, subtitleStyle, audioUrl, audioVolume = 1, onProgress } = options;
+    const { 
+      videoUrl, 
+      subtitleContent, 
+      subtitleStyle, 
+      audioUrl, 
+      audioVolume = 1, 
+      quality = 'fast',
+      onProgress 
+    } = options;
     
     this.progress = 0;
-    let currentPath = videoUrl;
+    
+    // Quick export if no modifications needed
+    if (!subtitleContent && !audioUrl) {
+      onProgress?.(10, 'Quick export...');
+      onProgress?.(50, 'Processing...');
+      onProgress?.(100, 'Done!');
+      return this.quickExport(videoUrl);
+    }
+    
+    const preset = QUALITY_PRESETS[quality];
 
     try {
-      // Initialize FFmpeg
-      onProgress?.(5, 'Loading FFmpeg...');
-      const loaded = await this.initFFmpeg((p) => onProgress?.(5 + p * 0.1, 'Loading FFmpeg...'));
+      onProgress?.(5, 'Initializing...');
+      const loaded = await this.initFFmpeg();
       if (!loaded) throw new Error('Failed to load FFmpeg');
 
-      onProgress?.(15, 'Loading video file...');
-      
-      // Get file from URL
+      onProgress?.(15, 'Loading video...');
       const { fetchFile } = await import('@ffmpeg/util');
       
-      // Load video file
       const videoData = await fetchFile(videoUrl);
       await this.ffmpeg.writeFile('input.mp4', videoData);
       onProgress?.(25, 'Video loaded');
 
-      // Build FFmpeg command
       let ffmpegArgs: string[] = ['-i', 'input.mp4'];
 
-      // Add subtitles if provided
+      // Subtitles
       if (subtitleContent) {
-        onProgress?.(35, 'Processing subtitles...');
-        
-        // Create SRT file
+        onProgress?.(30, 'Adding subtitles...');
         const srtData = new TextEncoder().encode(subtitleContent);
         await this.ffmpeg.writeFile('subs.srt', srtData);
-        
-        // Build subtitle style string based on subtitleStyle
         const styleString = this.buildSubtitleStyle(subtitleStyle);
-        
-        // Burn subtitles into video
         ffmpegArgs.push('-vf', `subtitles=subs.srt:force_style='${styleString}'`);
       }
 
-      // Add audio overlay if provided
+      // Audio
       if (audioUrl) {
-        onProgress?.(50, 'Loading audio...');
-        
+        onProgress?.(40, 'Mixing audio...');
         const audioData = await fetchFile(audioUrl);
         await this.ffmpeg.writeFile('audio.mp3', audioData);
         
-        // Mix original audio with voiceover
         if (audioVolume < 1) {
-          // Lower original audio volume and mix with voiceover
-          ffmpegArgs.push('-filter_complex', `[0:a]volume=0.3[a0];[1:a]volume=${audioVolume}[a1];[a0][a1]amix=inputs=2:duration=longest[aout]`, '-map', '[aout]');
+          ffmpegArgs.push(
+            '-filter_complex', 
+            `[0:a]volume=0.3[a0];[1:a]volume=${audioVolume}[a1];[a0][a1]amix=inputs=2:duration=longest[aout]`, 
+            '-map', '[aout]'
+          );
         } else {
-          // Replace with voiceover
-          ffmpegArgs.push('-i', 'audio.mp3', '-c:a', 'aac', '-b:a', '192k', '-map', '0:v', '-map', '1:a');
+          ffmpegArgs.push('-i', 'audio.mp3', '-c:a', 'aac', '-b:a', preset.audioBitrate, '-map', '0:v', '-map', '1:a');
         }
       }
 
-      // Output settings
+      // Fast output settings
+      onProgress?.(55, 'Exporting...');
       ffmpegArgs.push(
         '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-crf', '23',
+        '-preset', preset.preset,
+        '-crf', preset.crf.toString(),
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', preset.audioBitrate,
         '-movflags', '+faststart',
+        '-threads', '4',
         '-y',
         'output.mp4'
       );
 
       onProgress?.(60, 'Processing video...');
-
-      // Execute FFmpeg command
       await this.ffmpeg.exec(ffmpegArgs);
 
       onProgress?.(90, 'Finalizing...');
-
-      // Read output file
       const data = await this.ffmpeg.readFile('output.mp4');
       const blob = new Blob([data], { type: 'video/mp4' });
-      currentPath = URL.createObjectURL(blob);
-
+      
       this.progress = 100;
       onProgress?.(100, 'Export complete!');
 
-      return currentPath;
+      return URL.createObjectURL(blob);
     } catch (error) {
       console.error('Export failed:', error);
       throw error;
     }
   }
 
-  /**
-   * Get current export progress
-   */
   static getProgress(): number {
     return this.progress;
   }
 
-  /**
-   * Share exported video
-   */
   static async share(videoPath: string): Promise<boolean> {
     try {
       if (navigator.share) {
         const response = await fetch(videoPath);
         const blob = await response.blob();
-        
-        const file = new File([blob], 'mrecap-video.mp4', {
-          type: 'video/mp4',
-        });
-        
-        await navigator.share({
-          files: [file],
-          title: 'My Movie Recap',
-          text: 'Check out my video!',
-        });
-        
+        const file = new File([blob], 'mrecap-video.mp4', { type: 'video/mp4' });
+        await navigator.share({ files: [file], title: 'My Recap', text: 'Check out my video!' });
         return true;
       }
-      
-      // Fallback to download
       const a = document.createElement('a');
       a.href = videoPath;
       a.download = 'mrecap-video.mp4';
       a.click();
-      
       return true;
     } catch (error) {
       console.error('Share failed:', error);
@@ -186,18 +188,12 @@ export class ExportService {
     }
   }
 
-  /**
-   * Save to device gallery (mobile)
-   */
   static async saveToGallery(videoPath: string): Promise<boolean> {
     try {
-      // For mobile, we'd use expo-media-library
-      // This is a web fallback
       const a = document.createElement('a');
       a.href = videoPath;
       a.download = 'mrecap-video.mp4';
       a.click();
-      
       return true;
     } catch (error) {
       console.error('Save to gallery failed:', error);
@@ -205,9 +201,6 @@ export class ExportService {
     }
   }
 
-  /**
-   * Convert subtitle array to SRT format
-   */
   static subtitlesToSRT(subtitles: Array<{ id: number; startTime: number; endTime: number; text: string }>): string {
     return subtitles
       .map((sub, index) => {
@@ -218,77 +211,32 @@ export class ExportService {
       .join('\n\n');
   }
 
-  /**
-   * Format time for SRT (HH:MM:SS,mmm)
-   */
   private static formatSRTTime(seconds: number): string {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 1000);
-    
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
   }
 
-  /**
-   * Build FFmpeg subtitle style string from SubtitleStyle
-   */
   private static buildSubtitleStyle(style?: SubtitleStyle): string {
-    if (!style) {
-      return 'FontSize=24,PrimaryColour=&HFFFFFF&,BorderStyle=3';
-    }
-
+    if (!style) return 'FontSize=24,PrimaryColour=&HFFFFFF&,BorderStyle=3';
     const styles: string[] = [];
-
-    // FontSize
     styles.push(`FontSize=${style.fontSize}`);
-
-    // FontName (extract font family name)
     const fontName = style.fontFamily.split(',')[0].replace(/['"]/g, '');
     styles.push(`FontName=${fontName}`);
-
-    // PrimaryColour (convert hex to BGR format for FFmpeg)
     const textColor = style.textColor.replace('#', '');
-    const bgrText = this.hexToBGR(textColor);
-    styles.push(`PrimaryColour=&H${bgrText}&`);
-
-    // BackgroundColor with opacity
+    styles.push(`PrimaryColour=&H${this.hexToBGR(textColor)}&`);
     const bgColor = style.backgroundColor.replace('#', '');
-    const bgrBg = this.hexToBGR(bgColor);
     const alpha = Math.round((1 - style.backgroundOpacity) * 255);
-    styles.push(`BackColour=&H${alpha.toString(16).padStart(2, '0')}${bgrBg}&`);
-
-    // BorderStyle (3 = opaque box)
+    styles.push(`BackColour=&H${alpha.toString(16).padStart(2, '0')}${this.hexToBGR(bgColor)}&`);
     styles.push('BorderStyle=3');
-
-    // Alignment (based on position)
-    switch (style.position) {
-      case 'top':
-        styles.push('Alignment=5'); // Top center
-        break;
-      case 'center':
-        styles.push('Alignment=5'); // Center (use top-center as approximation)
-        break;
-      case 'bottom':
-      default:
-        styles.push('Alignment=2'); // Bottom center
-        break;
-    }
-
-    // Bold
+    styles.push(style.position === 'top' ? 'Alignment=5' : style.position === 'center' ? 'Alignment=5' : 'Alignment=2');
     styles.push(`Bold=${style.fontWeight === 'bold' ? 1 : 0}`);
-
-    // Shadow
-    if (style.textShadow) {
-      styles.push('Shadow=2');
-    }
-
+    if (style.textShadow) styles.push('Shadow=2');
     return styles.join(',');
   }
 
-  /**
-   * Convert hex color to BGR format for FFmpeg
-   */
   private static hexToBGR(hex: string): string {
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
