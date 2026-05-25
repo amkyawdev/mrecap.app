@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Subtitle } from '../services/subtitleParser';
 import { useProjectStore } from '../store/projectStore';
 
@@ -21,64 +21,52 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
     setActiveSubtitle(active || null);
   }, [currentTime, subtitles]);
 
+  // Convert hex to rgba for background
+  const backgroundColorWithOpacity = useMemo(() => {
+    const hex = subtitleStyle.backgroundColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${subtitleStyle.backgroundOpacity})`;
+  }, [subtitleStyle.backgroundColor, subtitleStyle.backgroundOpacity]);
+
   if (!activeSubtitle) return null;
 
-  // Calculate position based on style
-  const getPositionStyle = () => {
-    switch (subtitleStyle.position) {
-      case 'top':
-        return { top: '10%', bottom: 'auto', transform: 'translateX(-50%)' };
-      case 'center':
-        return { top: '50%', bottom: 'auto', transform: 'translate(-50%, -50%)' };
-      case 'bottom':
-      default:
-        return { bottom: '60px', top: 'auto', transform: 'translateX(-50%)' };
-    }
-  };
-
   return (
-    <div className="subtitle-overlay-container" style={getPositionStyle()}>
+    <div
+      className="absolute left-4 right-4 flex justify-center pointer-events-none"
+      style={{
+        bottom: subtitleStyle.position === 'bottom' ? '60px' : undefined,
+        top: subtitleStyle.position === 'top' ? '60px' : undefined,
+        transform: subtitleStyle.position === 'center' ? 'translateY(-50%)' : undefined,
+      }}
+    >
       <div
-        className="subtitle-box"
         style={{
           fontFamily: subtitleStyle.fontFamily,
           fontSize: `${subtitleStyle.fontSize}px`,
           color: subtitleStyle.textColor,
           fontWeight: subtitleStyle.fontWeight,
-          backgroundColor: subtitleStyle.backgroundColor,
-          opacity: subtitleStyle.backgroundOpacity,
+          backgroundColor: backgroundColorWithOpacity,
           textShadow: subtitleStyle.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          maxWidth: '90%',
         }}
       >
-        <p className="subtitle-text" style={{
+        <p style={{
           fontFamily: 'inherit',
           fontSize: 'inherit',
           color: 'inherit',
           fontWeight: 'inherit',
-          textShadow: 'inherit',
-        }}>{activeSubtitle.text}</p>
+          textShadow: subtitleStyle.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
+          textAlign: 'center',
+          margin: 0,
+          lineHeight: 1.4,
+        }}>
+          {activeSubtitle.text}
+        </p>
       </div>
-      
-      <style>{`
-        .subtitle-overlay-container {
-          position: absolute;
-          left: 20px;
-          right: 20px;
-          display: flex;
-          justify-content: center;
-          pointer-events: none;
-        }
-        .subtitle-box {
-          padding: 12px 24px;
-          border-radius: 8px;
-          max-width: 90%;
-        }
-        .subtitle-text {
-          text-align: center;
-          margin: 0;
-          line-height: 1.4;
-        }
-      `}</style>
     </div>
   );
 };

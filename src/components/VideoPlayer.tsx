@@ -214,10 +214,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
 
         .video-overlay {
           position: absolute;
-          bottom: 60px;
+          top: 0;
           left: 0;
           right: 0;
-          text-align: center;
+          bottom: 0;
           pointer-events: none;
         }
 
