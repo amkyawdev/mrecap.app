@@ -139,28 +139,26 @@ export const SubtitleEditorScreen: React.FC = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Video Area */}
           <div className="flex-1 bg-black flex items-center justify-center p-2 md:p-4 overflow-hidden">
-            <div className="w-full max-w-lg mx-auto">
-              {videoSrc ? (
-                <VideoPlayer
-                  src={videoSrc}
-                  onTimeUpdate={handleTimeUpdate}
-                  autoPlay={playing}
-                  overlay={
-                    <SubtitleOverlay
-                      subtitles={subtitles}
-                      currentTime={currentTime}
-                    />
-                  }
-                />
-              ) : (
-                <div className="aspect-video bg-neutral-900 rounded-lg flex items-center justify-center">
-                  <div className="text-center text-neutral-500">
-                    <Type className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No video loaded</p>
-                  </div>
+            {videoSrc ? (
+              <VideoPlayer
+                src={videoSrc}
+                onTimeUpdate={handleTimeUpdate}
+                autoPlay={playing}
+                overlay={
+                  <SubtitleOverlay
+                    subtitles={subtitles}
+                    currentTime={currentTime}
+                  />
+                }
+              />
+            ) : (
+              <div className="aspect-video bg-neutral-900 rounded-lg flex items-center justify-center max-w-lg mx-auto w-full">
+                <div className="text-center text-neutral-500">
+                  <Type className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No video loaded</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Controls Bar */}

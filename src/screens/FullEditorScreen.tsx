@@ -230,72 +230,74 @@ export const FullEditorScreen: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      {/* Main Content - Video on top, tools below */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         
-        {/* Video Preview - Mobile: Top, Desktop: Left */}
-        <div className="lg:flex-1 bg-black flex flex-col">
-          {/* Video Preview Area */}
-          <div className="flex-1 flex items-center justify-center p-2 md:p-4 overflow-hidden">
-            <div className="w-full max-w-lg mx-auto">
-              {previewUrl && (
-                <VideoPlayer
-                  src={previewUrl}
-                  onTimeUpdate={handleTimeUpdate}
-                  autoPlay={false}
-                  overlay={
-                    <SubtitleOverlay
-                      subtitles={subtitles}
-                      currentTime={currentTime}
-                    />
-                  }
+        {/* Video Preview - Top section */}
+        <div className="bg-black flex items-center justify-center p-2 shrink-0">
+          {previewUrl ? (
+            <VideoPlayer
+              src={previewUrl}
+              onTimeUpdate={handleTimeUpdate}
+              autoPlay={false}
+              overlay={
+                <SubtitleOverlay
+                  subtitles={subtitles}
+                  currentTime={currentTime}
                 />
-              )}
+              }
+            />
+          ) : (
+            <div className="aspect-video bg-neutral-900 rounded-lg flex items-center justify-center max-w-lg mx-auto w-full">
+              <div className="text-center text-neutral-500">
+                <Film className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No video loaded</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Sidebar Tools - Mobile: Bottom tabs, Desktop: Right */}
-        <div className="lg:w-72 border-t lg:border-t-0 lg:border-l border-white/5 bg-neutral-900/50 flex flex-col shrink-0">
+        {/* Editing Tools - Below video */}
+        <div className="flex-1 flex flex-col overflow-hidden border-t border-white/5">
           {/* Tab Navigation */}
-          <div className="flex border-b border-white/5 shrink-0">
+          <div className="flex border-b border-white/5 bg-neutral-900/80 shrink-0">
             <button
               onClick={() => setActiveTab('effects')}
-              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
                 activeTab === 'effects'
                   ? 'text-red-500 border-b-2 border-red-500'
                   : 'text-neutral-500 hover:text-white'
               }`}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span>Effects</span>
             </button>
             <button
               onClick={() => setActiveTab('text')}
-              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
                 activeTab === 'text'
                   ? 'text-red-500 border-b-2 border-red-500'
                   : 'text-neutral-500 hover:text-white'
               }`}
             >
-              <Type className="w-4 h-4" />
+              <Type className="w-3.5 h-3.5" />
               <span>Text</span>
             </button>
             <button
               onClick={() => setActiveTab('audio')}
-              className={`flex-1 py-2 md:py-3 text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
                 activeTab === 'audio'
                   ? 'text-red-500 border-b-2 border-red-500'
                   : 'text-neutral-500 hover:text-white'
               }`}
             >
-              <Music className="w-4 h-4" />
+              <Music className="w-3.5 h-3.5" />
               <span>Audio</span>
             </button>
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-2 md:p-3">
+          <div className="flex-1 overflow-y-auto p-3 bg-neutral-900/50">
             {activeTab === 'effects' && (
               <EffectsPanel clipId={selectedClipId} />
             )}

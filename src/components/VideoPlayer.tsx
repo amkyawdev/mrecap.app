@@ -129,55 +129,61 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Calculate responsive dimensions
+  const maxVideoHeight = '50vh';
+  const maxContainerWidth = '100%';
+
   return (
     <div 
       ref={containerRef}
-      className="relative w-full bg-black rounded-lg overflow-hidden group"
+      className="relative w-full max-w-lg mx-auto bg-black rounded-lg overflow-hidden group"
+      style={{ maxHeight: maxVideoHeight }}
       onMouseMove={() => setShowControls(true)}
     >
-      {/* Video with Aspect Ratio Container */}
+      {/* Video Container - Fixed height, centered */}
       <div 
-        className="relative w-full bg-black"
+        className="relative w-full flex items-center justify-center bg-black"
         style={{ 
-          paddingBottom: `${(1 / videoAspectRatio) * 100}%`,
-          maxHeight: '60vh',
-          maxWidth: '100%'
+          height: 'auto',
+          maxHeight: maxVideoHeight,
         }}
       >
-        <div className="absolute inset-0">
-          <video
-            ref={videoRef}
-            src={src}
-            autoPlay={autoPlay}
-            playsInline
-            muted={muted}
-            onClick={handleVideoClick}
-            className="w-full h-full object-contain cursor-pointer"
-          />
-          
-          {/* Overlay for subtitles */}
-          {overlay && (
-            <div className="absolute inset-0 pointer-events-none">
-              {overlay}
+        <video
+          ref={videoRef}
+          src={src}
+          autoPlay={autoPlay}
+          playsInline
+          muted={muted}
+          onClick={handleVideoClick}
+          className="w-full h-auto max-h-full object-contain cursor-pointer"
+          style={{ 
+            maxHeight: maxVideoHeight,
+            aspectRatio: videoAspectRatio <= 1 ? `${videoAspectRatio} / 1` : undefined 
+          }}
+        />
+        
+        {/* Overlay for subtitles */}
+        {overlay && (
+          <div className="absolute inset-0 pointer-events-none">
+            {overlay}
+          </div>
+        )}
+        
+        {/* Play/Pause Indicator */}
+        {!playing && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-black/60 rounded-full flex items-center justify-center">
+              <Play className="w-6 h-6 md:w-8 md:h-8 text-white fill-white" />
             </div>
-          )}
-          
-          {/* Play/Pause Indicator */}
-          {!playing && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
-                <Play className="w-8 h-8 text-white fill-white" />
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Controls Bar */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Controls Bar - Below video */}
+      <div className={`w-full bg-neutral-900 px-3 py-2 flex items-center gap-3 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         {/* Progress Bar */}
         <div 
-          className="w-full h-1 bg-white/30 rounded-full cursor-pointer mb-3 group/progress hover:h-1.5 transition-all"
+          className="flex-1 h-1 bg-white/20 rounded-full cursor-pointer group/progress"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const pos = (e.clientX - rect.left) / rect.width;
@@ -187,63 +193,37 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           <div 
             className="h-full bg-red-500 rounded-full relative"
             style={{ width: `${progress}%` }}
-          >
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity" />
-          </div>
+          />
         </div>
 
-        {/* Controls Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
-            >
-              {playing ? (
-                <Pause className="w-5 h-5 text-white" />
-              ) : (
-                <Play className="w-5 h-5 text-white fill-white" />
-              )}
-            </button>
+        {/* Play Button */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+          className="p-1.5 hover:bg-white/20 rounded-full transition-colors shrink-0"
+        >
+          {playing ? (
+            <Pause className="w-4 h-4 text-white" />
+          ) : (
+            <Play className="w-4 h-4 text-white fill-white" />
+          )}
+        </button>
 
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                className="p-1 hover:bg-white/20 rounded transition-colors"
-              >
-                {muted || volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-white" />
-                ) : (
-                  <Volume2 className="w-4 h-4 text-white" />
-                )}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={muted ? 0 : volume}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  changeVolume(val);
-                  if (val > 0 && muted) toggleMute();
-                }}
-                className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
-              />
-            </div>
+        {/* Volume */}
+        <button 
+          onClick={(e) => { e.stopPropagation(); toggleMute(); }}
+          className="p-1 hover:bg-white/20 rounded transition-colors shrink-0 hidden sm:block"
+        >
+          {muted || volume === 0 ? (
+            <VolumeX className="w-4 h-4 text-white" />
+          ) : (
+            <Volume2 className="w-4 h-4 text-white" />
+          )}
+        </button>
 
-            <span className="text-white/80 text-sm font-mono">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          </div>
-
-          <button 
-            onClick={handleFullscreen}
-            className="p-2 hover:bg-white/20 rounded-full transition-colors"
-          >
-            <Maximize2 className="w-5 h-5 text-white" />
-          </button>
-        </div>
+        {/* Time */}
+        <span className="text-white/70 text-xs font-mono shrink-0">
+          {formatTime(currentTime)}
+        </span>
       </div>
     </div>
   );
