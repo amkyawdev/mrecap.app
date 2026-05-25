@@ -137,8 +137,8 @@ export const SubtitleEditorScreen: React.FC = () => {
 
         {/* Right Area - Video & Controls */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Video Area */}
-          <div className="flex-1 bg-black flex items-center justify-center p-2 md:p-4 overflow-hidden">
+          {/* Video Area - Fixed size */}
+          <div className="flex items-center justify-center p-2 bg-black shrink-0">
             {videoSrc ? (
               <VideoPlayer
                 src={videoSrc}
@@ -152,7 +152,7 @@ export const SubtitleEditorScreen: React.FC = () => {
                 }
               />
             ) : (
-              <div className="aspect-video bg-neutral-900 rounded-lg flex items-center justify-center max-w-lg mx-auto w-full">
+              <div className="w-full aspect-video bg-neutral-900 rounded-lg flex items-center justify-center max-w-md">
                 <div className="text-center text-neutral-500">
                   <Type className="w-10 h-10 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No video loaded</p>

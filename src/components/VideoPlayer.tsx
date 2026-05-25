@@ -129,23 +129,24 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  // Calculate responsive dimensions
-  const maxVideoHeight = '50vh';
-  const maxContainerWidth = '100%';
+  // Fixed dimensions - never exceeds these
+  const maxWidth = '100%';
+  const maxHeight = '45vh';
 
   return (
     <div 
       ref={containerRef}
-      className="relative w-full max-w-lg mx-auto bg-black rounded-lg overflow-hidden group"
-      style={{ maxHeight: maxVideoHeight }}
+      className="relative w-full bg-black rounded-lg overflow-hidden"
+      style={{ maxWidth, maxHeight }}
       onMouseMove={() => setShowControls(true)}
     >
-      {/* Video Container - Fixed height, centered */}
+      {/* Video Container - Fixed size container */}
       <div 
-        className="relative w-full flex items-center justify-center bg-black"
+        className="relative w-full bg-black flex items-center justify-center"
         style={{ 
-          height: 'auto',
-          maxHeight: maxVideoHeight,
+          width: '100%',
+          height: '100%',
+          aspectRatio: '16/9', // Force 16:9 aspect ratio always
         }}
       >
         <video
@@ -155,11 +156,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           playsInline
           muted={muted}
           onClick={handleVideoClick}
-          className="w-full h-auto max-h-full object-contain cursor-pointer"
-          style={{ 
-            maxHeight: maxVideoHeight,
-            aspectRatio: videoAspectRatio <= 1 ? `${videoAspectRatio} / 1` : undefined 
-          }}
+          className="w-full h-full object-contain cursor-pointer"
         />
         
         {/* Overlay for subtitles */}
