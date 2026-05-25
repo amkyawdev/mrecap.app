@@ -19,15 +19,14 @@ export const PermissionModal: React.FC<PermissionModalProps> = ({
 
   const checkPermission = async () => {
     try {
-      let result: PermissionState | PermissionName | string = 'prompt';
+      let result: any = 'prompt';
       
       if (type === 'camera') {
-        result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        result = await navigator.permissions.query({ name: 'camera' });
       } else if (type === 'microphone') {
-        result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+        result = await navigator.permissions.query({ name: 'microphone' });
       }
       
-      // @ts-ignore - state property exists on PermissionState
       setPermissionState(result.state || 'prompt');
     } catch (error) {
       console.log('Permission API not supported, using legacy API');
