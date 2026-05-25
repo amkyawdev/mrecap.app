@@ -4,7 +4,8 @@ import { useProjectStore } from '../store/projectStore';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { SubtitleList } from '../components/SubtitleList';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
-import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock } from 'lucide-react';
+import { SubtitleStylePanel } from '../components/SubtitleStylePanel';
+import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock, Palette, X } from 'lucide-react';
 
 export const SubtitleEditorScreen: React.FC = () => {
   const { 
@@ -29,6 +30,7 @@ export const SubtitleEditorScreen: React.FC = () => {
   } = useSubtitleEditor();
 
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showStylePanel, setShowStylePanel] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -62,9 +64,21 @@ export const SubtitleEditorScreen: React.FC = () => {
         <h2 className="text-white font-semibold flex items-center gap-2">
           <Type className="w-5 h-5" /> Subtitle Editor
         </h2>
-        <button onClick={downloadSRT} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
-          <Save className="w-3.5 h-3.5" /> Export
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowStylePanel(!showStylePanel)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1 ${
+              showStylePanel
+                ? 'bg-red-600 text-white'
+                : 'bg-white/5 hover:bg-white/10 text-white'
+            }`}
+          >
+            <Palette className="w-3.5 h-3.5" /> Style
+          </button>
+          <button onClick={downloadSRT} className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
+            <Save className="w-3.5 h-3.5" /> Export
+          </button>
+        </div>
       </header>
 
       <div className="bg-black aspect-video relative">
@@ -109,6 +123,13 @@ export const SubtitleEditorScreen: React.FC = () => {
         <span className="flex items-center gap-1"><Type className="w-3.5 h-3.5" /> {subtitles.length} subtitle{subtitles.length !== 1 ? 's' : ''}</span>
         <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {formatDuration(videoDuration)}</span>
       </div>
+
+      {/* Style Panel */}
+      {showStylePanel && (
+        <div className="border-b border-white/5">
+          <SubtitleStylePanel />
+        </div>
+      )}
 
       <div className={`flex-1 overflow-y-auto transition-all duration-400 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
         <SubtitleList

@@ -3,6 +3,7 @@ export * from './VideoPlayer';
 export * from './TimelineSlider';
 export * from './SubtitleList';
 export * from './SubtitleOverlay';
+export * from './SubtitleStylePanel';
 export * from './AudioWaveform';
 export * from './ProgressBar';
 export * from './PermissionModal';

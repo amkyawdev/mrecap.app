@@ -1,6 +1,29 @@
 import { create } from 'zustand';
 import { Subtitle } from '../services/subtitleParser';
 
+// Subtitle Style Settings
+export interface SubtitleStyle {
+  fontFamily: string;
+  fontSize: number;
+  textColor: string;
+  backgroundColor: string;
+  backgroundOpacity: number;
+  position: 'top' | 'center' | 'bottom';
+  fontWeight: 'normal' | 'bold';
+  textShadow: boolean;
+}
+
+const defaultSubtitleStyle: SubtitleStyle = {
+  fontFamily: 'Arial, sans-serif',
+  fontSize: 24,
+  textColor: '#ffffff',
+  backgroundColor: '#000000',
+  backgroundOpacity: 0.75,
+  position: 'bottom',
+  fontWeight: 'bold',
+  textShadow: true,
+};
+
 interface VideoState {
   // Video
   videoSrc: string | null;
@@ -16,6 +39,7 @@ interface VideoState {
   // Subtitles
   subtitles: Subtitle[];
   subtitleFile: File | null;
+  subtitleStyle: SubtitleStyle;
   
   // Audio
   audioSrc: string | null;
@@ -41,6 +65,8 @@ interface VideoState {
   updateSubtitle: (subtitle: Subtitle) => void;
   deleteSubtitle: (id: number) => void;
   setSubtitleFile: (file: File | null) => void;
+  setSubtitleStyle: (style: Partial<SubtitleStyle>) => void;
+  resetSubtitleStyle: () => void;
   setAudioSrc: (src: string | null) => void;
   setAudioFile: (file: File | null) => void;
   setAudioVolume: (volume: number) => void;
@@ -60,6 +86,7 @@ const initialState = {
   trimEnd: 0,
   subtitles: [],
   subtitleFile: null,
+  subtitleStyle: defaultSubtitleStyle,
   audioSrc: null,
   audioFile: null,
   audioVolume: 0.8,
@@ -91,6 +118,11 @@ export const useProjectStore = create<VideoState>((set) => ({
       subtitles: state.subtitles.filter((s) => s.id !== id),
     })),
   setSubtitleFile: (file) => set({ subtitleFile: file }),
+  setSubtitleStyle: (style) =>
+    set((state) => ({
+      subtitleStyle: { ...state.subtitleStyle, ...style },
+    })),
+  resetSubtitleStyle: () => set({ subtitleStyle: defaultSubtitleStyle }),
   setAudioSrc: (src) => set({ audioSrc: src }),
   setAudioFile: (file) => set({ audioFile: file }),
   setAudioVolume: (volume) => set({ audioVolume: volume }),

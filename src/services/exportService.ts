@@ -3,9 +3,12 @@
  * Handles exporting final video with all effects applied using FFmpeg.wasm
  */
 
+import { SubtitleStyle } from '../store/projectStore';
+
 export interface ExportOptions {
   videoUrl: string;
   subtitleContent?: string;
+  subtitleStyle?: SubtitleStyle;
   audioUrl?: string;
   audioVolume?: number;
   onProgress?: (progress: number, message: string) => void;
@@ -51,7 +54,7 @@ export class ExportService {
    * Export final video with FFmpeg processing
    */
   static async export(options: ExportOptions): Promise<string> {
-    const { videoUrl, subtitleContent, audioUrl, audioVolume = 1, onProgress } = options;
+    const { videoUrl, subtitleContent, subtitleStyle, audioUrl, audioVolume = 1, onProgress } = options;
     
     this.progress = 0;
     let currentPath = videoUrl;
@@ -83,8 +86,11 @@ export class ExportService {
         const srtData = new TextEncoder().encode(subtitleContent);
         await this.ffmpeg.writeFile('subs.srt', srtData);
         
+        // Build subtitle style string based on subtitleStyle
+        const styleString = this.buildSubtitleStyle(subtitleStyle);
+        
         // Burn subtitles into video
-        ffmpegArgs.push('-vf', `subtitles=subs.srt:force_style='FontSize=24,PrimaryColour=&HFFFFFF&,BorderStyle=3'`);
+        ffmpegArgs.push('-vf', `subtitles=subs.srt:force_style='${styleString}'`);
       }
 
       // Add audio overlay if provided
@@ -222,5 +228,71 @@ export class ExportService {
     const ms = Math.floor((seconds % 1) * 1000);
     
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
+  }
+
+  /**
+   * Build FFmpeg subtitle style string from SubtitleStyle
+   */
+  private static buildSubtitleStyle(style?: SubtitleStyle): string {
+    if (!style) {
+      return 'FontSize=24,PrimaryColour=&HFFFFFF&,BorderStyle=3';
+    }
+
+    const styles: string[] = [];
+
+    // FontSize
+    styles.push(`FontSize=${style.fontSize}`);
+
+    // FontName (extract font family name)
+    const fontName = style.fontFamily.split(',')[0].replace(/['"]/g, '');
+    styles.push(`FontName=${fontName}`);
+
+    // PrimaryColour (convert hex to BGR format for FFmpeg)
+    const textColor = style.textColor.replace('#', '');
+    const bgrText = this.hexToBGR(textColor);
+    styles.push(`PrimaryColour=&H${bgrText}&`);
+
+    // BackgroundColor with opacity
+    const bgColor = style.backgroundColor.replace('#', '');
+    const bgrBg = this.hexToBGR(bgColor);
+    const alpha = Math.round((1 - style.backgroundOpacity) * 255);
+    styles.push(`BackColour=&H${alpha.toString(16).padStart(2, '0')}${bgrBg}&`);
+
+    // BorderStyle (3 = opaque box)
+    styles.push('BorderStyle=3');
+
+    // Alignment (based on position)
+    switch (style.position) {
+      case 'top':
+        styles.push('Alignment=5'); // Top center
+        break;
+      case 'center':
+        styles.push('Alignment=5'); // Center (use top-center as approximation)
+        break;
+      case 'bottom':
+      default:
+        styles.push('Alignment=2'); // Bottom center
+        break;
+    }
+
+    // Bold
+    styles.push(`Bold=${style.fontWeight === 'bold' ? 1 : 0}`);
+
+    // Shadow
+    if (style.textShadow) {
+      styles.push('Shadow=2');
+    }
+
+    return styles.join(',');
+  }
+
+  /**
+   * Convert hex color to BGR format for FFmpeg
+   */
+  private static hexToBGR(hex: string): string {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `${b.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${r.toString(16).padStart(2, '0')}`;
   }
 }

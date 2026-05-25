@@ -10,6 +10,7 @@ export function useExport() {
     videoSrc,
     audioSrc,
     subtitles,
+    subtitleStyle,
     audioVolume,
     exportProgress,
     exportedVideoSrc,
@@ -36,6 +37,7 @@ export function useExport() {
       const outputUrl = await ExportService.export({
         videoUrl: videoSrc,
         subtitleContent: srtContent,
+        subtitleStyle: subtitleStyle,
         audioUrl: audioSrc || undefined,
         audioVolume: audioVolume,
         onProgress: (progress, message) => {
@@ -50,7 +52,7 @@ export function useExport() {
     } finally {
       setIsExporting(false);
     }
-  }, [videoSrc, audioSrc, subtitles, audioVolume, setExportProgress, setExportedVideoSrc]);
+  }, [videoSrc, audioSrc, subtitles, subtitleStyle, audioVolume, setExportProgress, setExportedVideoSrc]);
 
   const shareVideo = useCallback(async () => {
     if (!exportedVideoSrc) return;

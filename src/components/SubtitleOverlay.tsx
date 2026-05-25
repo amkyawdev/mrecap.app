@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Subtitle } from '../services/subtitleParser';
+import { useProjectStore } from '../store/projectStore';
 
 interface SubtitleOverlayProps {
   subtitles: Subtitle[];
@@ -11,6 +12,7 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   currentTime,
 }) => {
   const [activeSubtitle, setActiveSubtitle] = useState<Subtitle | null>(null);
+  const { subtitleStyle } = useProjectStore();
 
   useEffect(() => {
     const active = subtitles.find(
@@ -21,16 +23,45 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
 
   if (!activeSubtitle) return null;
 
+  // Calculate position based on style
+  const getPositionStyle = () => {
+    switch (subtitleStyle.position) {
+      case 'top':
+        return { top: '10%', bottom: 'auto', transform: 'translateX(-50%)' };
+      case 'center':
+        return { top: '50%', bottom: 'auto', transform: 'translate(-50%, -50%)' };
+      case 'bottom':
+      default:
+        return { bottom: '60px', top: 'auto', transform: 'translateX(-50%)' };
+    }
+  };
+
   return (
-    <div className="subtitle-overlay-container">
-      <div className="subtitle-box">
-        <p className="subtitle-text">{activeSubtitle.text}</p>
+    <div className="subtitle-overlay-container" style={getPositionStyle()}>
+      <div
+        className="subtitle-box"
+        style={{
+          fontFamily: subtitleStyle.fontFamily,
+          fontSize: `${subtitleStyle.fontSize}px`,
+          color: subtitleStyle.textColor,
+          fontWeight: subtitleStyle.fontWeight,
+          backgroundColor: subtitleStyle.backgroundColor,
+          opacity: subtitleStyle.backgroundOpacity,
+          textShadow: subtitleStyle.textShadow ? '2px 2px 4px rgba(0,0,0,0.5)' : 'none',
+        }}
+      >
+        <p className="subtitle-text" style={{
+          fontFamily: 'inherit',
+          fontSize: 'inherit',
+          color: 'inherit',
+          fontWeight: 'inherit',
+          textShadow: 'inherit',
+        }}>{activeSubtitle.text}</p>
       </div>
       
       <style>{`
         .subtitle-overlay-container {
           position: absolute;
-          bottom: 60px;
           left: 20px;
           right: 20px;
           display: flex;
@@ -38,17 +69,14 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
           pointer-events: none;
         }
         .subtitle-box {
-          background: rgba(0,0,0,0.75);
           padding: 12px 24px;
           border-radius: 8px;
           max-width: 90%;
         }
         .subtitle-text {
-          color: white;
-          font-size: 20px;
           text-align: center;
           margin: 0;
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+          line-height: 1.4;
         }
       `}</style>
     </div>
