@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTimelineStore, VideoClip, AudioTrack } from '../store/timelineStore';
 import { useProjectStore } from '../store/projectStore';
-import { VideoPlayer } from '../components/VideoPlayer';
 import { Timeline } from '../components/Timeline';
 import { EffectsPanel } from '../components/EffectsPanel';
 import { TextOverlayEditor } from '../components/TextOverlayEditor';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
-import { ArrowLeft, Download, Music, Type, Sparkles, Upload, Film, FolderOpen, Scissors, Trash2, Settings, Undo, Redo, ChevronLeft, ChevronRight, SkipBack, SkipForward, Play, Pause } from 'lucide-react';
+import { ArrowLeft, Download, Music, Type, Sparkles, Upload, Film, FolderOpen, Scissors, Trash2, Settings, Undo, Redo, ChevronLeft, ChevronRight, SkipBack, SkipForward, Play, Pause, Repeat, Maximize2, Volume2, VolumeX, Move, ArrowUp, ArrowDown, ArrowLeft as ArrowLeftIcon, ArrowRight } from 'lucide-react';
 
 type EditorTab = 'effects' | 'text' | 'audio';
 
@@ -29,8 +28,12 @@ export const FullEditorScreen: React.FC = () => {
     removeVideoClip,
     splitClipAt,
     reset,
+    updateVideoClip,
   } = useTimelineStore();
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+  
   const [activeTab, setActiveTab] = useState<EditorTab>('effects');
   const [showExportModal, setShowExportModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -39,9 +42,11 @@ export const FullEditorScreen: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isLooping, setIsLooping] = useState(false);
-  const [showMiniPlayerControls, setShowMiniPlayerControls] = useState(true);
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Initialize with video clip from project store
   useEffect(() => {
@@ -168,7 +173,164 @@ export const FullEditorScreen: React.FC = () => {
     setCurrentScreen('home');
   };
 
+  // Video event handlers
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoadedMetadata = () => {
+      setCurrentVideoDuration(video.duration);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (isLooping) {
+        video.currentTime = 0;
+        video.play();
+        setIsPlaying(true);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('ended', handleEnded);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('ended', handleEnded);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+    };
+  }, [isLooping, setCurrentTime]);
+
+  // Update playback speed
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  // Update loop
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.loop = isLooping;
+    }
+  }, [isLooping]);
+
+  // Auto-hide controls
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isPlaying && showControls) {
+      timeout = setTimeout(() => setShowControls(false), 3000);
+    }
+    return () => clearTimeout(timeout);
+  }, [isPlaying, showControls]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play();
+    }
+  };
+
+  const skipBackward = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, video.currentTime - 10);
+  };
+
+  const skipForward = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.min(displayDuration, video.currentTime + 10);
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !muted;
+    setMuted(!muted);
+  };
+
+  const changeVolume = (newVolume: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = newVolume;
+    setVolume(newVolume);
+    if (newVolume > 0 && muted) {
+      video.muted = false;
+      setMuted(false);
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (!videoContainerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoContainerRef.current.requestFullscreen();
+    }
+  };
+
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+    setShowSpeedMenu(false);
+  };
+
+  const moveSubtitle = (direction: 'up' | 'down' | 'left' | 'right') => {
+    const step = 0.5;
+    let newPosition = { ...subtitlePosition };
+    
+    switch (direction) {
+      case 'up':
+        newPosition = { ...newPosition, bottom: Math.min(95, (newPosition.bottom || 40) + step), top: undefined };
+        break;
+      case 'down':
+        newPosition = { ...newPosition, bottom: Math.max(5, (newPosition.bottom || 40) - step), top: undefined };
+        break;
+      case 'left':
+        newPosition = { ...newPosition, left: Math.max(5, newPosition.left - step) };
+        break;
+      case 'right':
+        newPosition = { ...newPosition, left: Math.min(95, newPosition.left + step) };
+        break;
+    }
+    
+    setSubtitlePosition(newPosition);
+  };
+
+  const resetSubtitlePosition = () => {
+    setSubtitlePosition({ bottom: 40, left: 50 });
+  };
+
   const displayDuration = currentVideoDuration || videoDuration;
+  const progress = displayDuration > 0 ? (currentTime / displayDuration) * 100 : 0;
 
   if (!videoSrc && !previewUrl) {
     return (
@@ -246,28 +408,213 @@ export const FullEditorScreen: React.FC = () => {
       {/* Main Content - Video on top, tools below */}
       <div className="flex-1 flex flex-col overflow-hidden">
         
-        {/* Video Preview - Top section (Fixed size) */}
-        <div className="bg-black flex items-center justify-center p-2 shrink-0">
+        {/* Subtitle Position Control Panel */}
+        <div className="bg-neutral-800 border-b border-white/10 p-3 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white text-sm font-medium flex items-center gap-2">
+              <Move className="w-4 h-4 text-red-500" />
+              Subtitle Position
+            </p>
+            <button 
+              onClick={resetSubtitlePosition}
+              className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs rounded transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <button 
+              onClick={() => moveSubtitle('up')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Up"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('down')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Down"
+            >
+              <ArrowDown className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('left')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Left"
+            >
+              <ArrowLeftIcon className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('right')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Right"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-neutral-500 text-xs text-center mt-2">
+            Position: Left {subtitlePosition.left}%, Bottom {subtitlePosition.bottom || 40}px
+          </p>
+        </div>
+
+        {/* Video Preview - Top section with full controls */}
+        <div 
+          ref={videoContainerRef}
+          className="bg-black flex items-center justify-center p-2 shrink-0 relative"
+          onMouseMove={() => setShowControls(true)}
+        >
           {previewUrl ? (
-            <VideoPlayer
-              src={previewUrl}
-              onTimeUpdate={handleTimeUpdate}
-              autoPlay={isPlaying}
-              playbackSpeed={playbackSpeed}
-              loop={isLooping}
-              showSubtitleControls={true}
-              subtitlePosition={subtitlePosition}
-              onSubtitlePositionChange={setSubtitlePosition}
-              onPlaybackSpeedChange={setPlaybackSpeed}
-              overlay={
+            <div className="relative w-full" style={{ aspectRatio: '16/9', maxWidth: '100%' }}>
+              <video
+                ref={videoRef}
+                src={previewUrl}
+                autoPlay={isPlaying}
+                playsInline
+                loop={isLooping}
+                muted={muted}
+                className="w-full h-full object-contain cursor-pointer"
+                onClick={togglePlay}
+              />
+              
+              {/* Subtitle Overlay */}
+              <div className="absolute inset-0 pointer-events-none">
                 <SubtitleOverlay
                   subtitles={subtitles}
                   currentTime={currentTime}
                   position={subtitlePosition}
                   onPositionChange={setSubtitlePosition}
                 />
-              }
-            />
+              </div>
+
+              {/* Play/Pause Center Button */}
+              {!isPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center">
+                    <Play className="w-8 h-8 text-white fill-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Controls Bar */}
+              <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+                {/* Progress Bar */}
+                <div 
+                  className="h-1 bg-white/30 rounded-full cursor-pointer group mb-2"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = pos * displayDuration;
+                    }
+                  }}
+                >
+                  <div 
+                    className="h-full bg-red-500 rounded-full relative"
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+
+                {/* Control Buttons */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {/* Play/Pause */}
+                    <button 
+                      onClick={togglePlay}
+                      className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-5 h-5 text-white" />
+                      ) : (
+                        <Play className="w-5 h-5 text-white fill-white" />
+                      )}
+                    </button>
+
+                    {/* Skip Back */}
+                    <button 
+                      onClick={skipBackward}
+                      className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                      title="Skip 10s back"
+                    >
+                      <SkipBack className="w-4 h-4 text-white" />
+                    </button>
+
+                    {/* Skip Forward */}
+                    <button 
+                      onClick={skipForward}
+                      className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                      title="Skip 10s forward"
+                    >
+                      <SkipForward className="w-4 h-4 text-white" />
+                    </button>
+
+                    {/* Volume */}
+                    <button 
+                      onClick={toggleMute}
+                      className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                    >
+                      {muted || volume === 0 ? (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      ) : (
+                        <Volume2 className="w-4 h-4 text-white" />
+                      )}
+                    </button>
+
+                    {/* Time */}
+                    <span className="text-white/70 text-xs font-mono">
+                      {formatDuration(currentTime)} / {formatDuration(displayDuration)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Loop */}
+                    <button 
+                      onClick={() => setIsLooping(!isLooping)}
+                      className={`p-1.5 rounded transition-colors ${isLooping ? 'text-red-500' : 'text-white/70 hover:text-white'}`}
+                      title="Loop"
+                    >
+                      <Repeat className="w-4 h-4" />
+                    </button>
+
+                    {/* Speed */}
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                        className="px-2 py-1 bg-white/20 rounded text-white text-xs font-medium"
+                      >
+                        {playbackSpeed}x
+                      </button>
+                      {showSpeedMenu && (
+                        <div className="absolute bottom-full right-0 mb-2 bg-neutral-800 rounded-lg p-2 shadow-lg z-10">
+                          {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                            <button
+                              key={speed}
+                              onClick={() => handleSpeedChange(speed)}
+                              className={`block w-full text-left px-3 py-1.5 text-xs rounded transition-colors ${
+                                playbackSpeed === speed
+                                  ? 'bg-red-600 text-white'
+                                  : 'text-white/70 hover:bg-white/10'
+                              }`}
+                            >
+                              {speed}x
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fullscreen */}
+                    <button 
+                      onClick={handleFullscreen}
+                      className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                    >
+                      <Maximize2 className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="w-full aspect-video bg-neutral-900 rounded-lg flex items-center justify-center max-w-md">
               <div className="text-center text-neutral-500">
@@ -385,6 +732,12 @@ export const FullEditorScreen: React.FC = () => {
     </div>
   );
 };
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 // Audio Panel Component
 const AudioPanel: React.FC<{ onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void; tracks: AudioTrack[] }> = ({ onUpload, tracks }) => {
