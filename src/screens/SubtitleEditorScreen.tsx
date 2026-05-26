@@ -5,7 +5,7 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import { SubtitleList } from '../components/SubtitleList';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
 import { SubtitleStylePanel } from '../components/SubtitleStylePanel';
-import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock, Palette, X, List, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock, Palette, X, List, ChevronLeft, Move, ArrowUp, ArrowDown, ArrowLeft as ArrowLeftIcon, ArrowRight } from 'lucide-react';
 
 interface SubtitlePosition {
   bottom?: number;
@@ -41,7 +41,7 @@ export const SubtitleEditorScreen: React.FC = () => {
   const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({ bottom: 40, left: 50 });
   const [isLooping, setIsLooping] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [showSubtitleControls, setShowSubtitleControls] = useState(false);
+  const [showSubtitlePositionPanel, setShowSubtitlePositionPanel] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -70,6 +70,32 @@ export const SubtitleEditorScreen: React.FC = () => {
     setSubtitlePosition(position);
   };
 
+  const moveSubtitle = (direction: 'up' | 'down' | 'left' | 'right') => {
+    const step = 5;
+    let newPosition = { ...subtitlePosition };
+    
+    switch (direction) {
+      case 'up':
+        newPosition = { ...newPosition, bottom: Math.min(95, (newPosition.bottom || 40) + step), top: undefined };
+        break;
+      case 'down':
+        newPosition = { ...newPosition, bottom: Math.max(5, (newPosition.bottom || 40) - step), top: undefined };
+        break;
+      case 'left':
+        newPosition = { ...newPosition, left: Math.max(5, newPosition.left - step) };
+        break;
+      case 'right':
+        newPosition = { ...newPosition, left: Math.min(95, newPosition.left + step) };
+        break;
+    }
+    
+    setSubtitlePosition(newPosition);
+  };
+
+  const resetSubtitlePosition = () => {
+    setSubtitlePosition({ bottom: 40, left: 50 });
+  };
+
   return (
     <div className="h-screen bg-neutral-950 flex flex-col overflow-hidden">
       {/* Header */}
@@ -81,19 +107,70 @@ export const SubtitleEditorScreen: React.FC = () => {
           <Type className="w-4 h-4" /> Subtitle Editor
         </h2>
         <div className="flex items-center gap-2">
-          {/* Subtitle Position Toggle */}
+          {/* Subtitle Position Toggle Button */}
           <button 
-            onClick={() => setShowSubtitleControls(!showSubtitleControls)}
-            className={`p-2 rounded-lg transition-colors ${showSubtitleControls ? 'bg-red-600 text-white' : 'bg-white/5 hover:bg-white/10 text-white'}`}
+            onClick={() => setShowSubtitlePositionPanel(!showSubtitlePositionPanel)}
+            className={`p-2 rounded-lg transition-colors ${showSubtitlePositionPanel ? 'bg-red-600 text-white' : 'bg-white/5 hover:bg-white/10 text-white'}`}
             title="Subtitle Position Controls"
           >
-            <Type className="w-4 h-4" />
+            <Move className="w-4 h-4" />
           </button>
           <button onClick={downloadSRT} className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
             <Save className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
+
+      {/* Subtitle Position Control Panel */}
+      {showSubtitlePositionPanel && (
+        <div className="bg-neutral-800 border-b border-white/10 p-3 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white text-sm font-medium flex items-center gap-2">
+              <Move className="w-4 h-4 text-red-500" />
+              Subtitle Position
+            </p>
+            <button 
+              onClick={resetSubtitlePosition}
+              className="px-2 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs rounded transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <button 
+              onClick={() => moveSubtitle('up')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Up"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('down')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Down"
+            >
+              <ArrowDown className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('left')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Left"
+            >
+              <ArrowLeftIcon className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => moveSubtitle('right')}
+              className="p-3 bg-neutral-700 hover:bg-neutral-600 rounded-lg text-white transition-colors"
+              title="Move Right"
+            >
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+          <p className="text-neutral-500 text-xs text-center mt-2">
+            Position: Left {subtitlePosition.left}%, Bottom {subtitlePosition.bottom || 40}px
+          </p>
+        </div>
+      )}
 
       {/* Main Content - Video on top, editing below */}
       <div className="flex-1 flex flex-col overflow-hidden">
