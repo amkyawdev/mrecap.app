@@ -21,7 +21,7 @@
   </a>
 </p>
 
-[ဒီမှာ Demo ကြည့်ရန်](https://mrecap-app.vercel.app
+[ဒီမှာ Demo ကြည့်ရန်](https://mrecap-app.vercel.app)
 ---
 
 ## 📖 Table of Contents
