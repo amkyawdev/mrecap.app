@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useExport } from '../hooks/useExport';
-import { ArrowLeft, Video, Music, Type, Upload, Share2, Download, Plus, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Video, Music, Type, Upload, Share2, Download, Plus, AlertTriangle, Loader2, Server } from 'lucide-react';
 
 export const ExportScreen: React.FC = () => {
   const {
@@ -11,6 +11,7 @@ export const ExportScreen: React.FC = () => {
     exportedVideoSrc,
     isExporting,
     exportError,
+    usingServerExport,
     startExport,
     shareVideo,
     saveToGallery,
@@ -27,16 +28,24 @@ export const ExportScreen: React.FC = () => {
 
   // Update progress message based on export progress
   useEffect(() => {
-    if (exportProgress < 5) setProgressMessage('Initializing...');
-    else if (exportProgress < 20) setProgressMessage('Loading FFmpeg...');
-    else if (exportProgress < 25) setProgressMessage('Loading video file...');
-    else if (exportProgress < 35) setProgressMessage('Video loaded');
-    else if (exportProgress < 50) setProgressMessage('Processing subtitles...');
-    else if (exportProgress < 60) setProgressMessage('Loading audio...');
-    else if (exportProgress < 90) setProgressMessage('Processing video...');
-    else if (exportProgress < 100) setProgressMessage('Finalizing...');
-    else setProgressMessage('Export complete!');
-  }, [exportProgress]);
+    if (usingServerExport) {
+      if (exportProgress < 10) setProgressMessage('Uploading video...');
+      else if (exportProgress < 30) setProgressMessage('Processing with FFmpeg...');
+      else if (exportProgress < 80) setProgressMessage('Encoding video...');
+      else if (exportProgress < 95) setProgressMessage('Finalizing...');
+      else setProgressMessage('Export complete!');
+    } else {
+      if (exportProgress < 5) setProgressMessage('Initializing...');
+      else if (exportProgress < 20) setProgressMessage('Loading FFmpeg...');
+      else if (exportProgress < 25) setProgressMessage('Loading video file...');
+      else if (exportProgress < 35) setProgressMessage('Video loaded');
+      else if (exportProgress < 50) setProgressMessage('Processing subtitles...');
+      else if (exportProgress < 60) setProgressMessage('Loading audio...');
+      else if (exportProgress < 90) setProgressMessage('Processing video...');
+      else if (exportProgress < 100) setProgressMessage('Finalizing...');
+      else setProgressMessage('Export complete!');
+    }
+  }, [exportProgress, usingServerExport]);
 
   if (isExporting) {
     return (
@@ -58,25 +67,49 @@ export const ExportScreen: React.FC = () => {
           </div>
           
           <div className="space-y-2 text-left">
-            {[
-              { label: 'Loading FFmpeg', active: exportProgress > 5 },
-              { label: 'Loading video', active: exportProgress > 15 },
-              { label: 'Processing subtitles', active: exportProgress > 35 },
-              { label: 'Mixing audio', active: exportProgress > 50 },
-              { label: 'Encoding video', active: exportProgress > 60 },
-              { label: 'Finalizing', active: exportProgress >= 90 },
-            ].map((step, i) => (
-              <div key={i} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${step.active ? 'bg-neutral-800 text-white' : 'bg-neutral-900/50 text-neutral-500'}`}>
-                {step.active ? (
-                  <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            {usingServerExport ? (
+              <>
+                {[
+                  { label: 'Uploading video', active: exportProgress > 5 },
+                  { label: 'Processing subtitles', active: exportProgress > 20 },
+                  { label: 'FFmpeg encoding', active: exportProgress > 40 },
+                  { label: 'Finalizing', active: exportProgress >= 80 },
+                ].map((step, i) => (
+                  <div key={i} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${step.active ? 'bg-neutral-800 text-white' : 'bg-neutral-900/50 text-neutral-500'}`}>
+                    {step.active ? (
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-neutral-600"></div>
+                    )}
+                    <span className="text-sm">{step.label}</span>
                   </div>
-                ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-neutral-600"></div>
-                )}
-                <span className="text-sm">{step.label}</span>
-              </div>
-            ))}
+                ))}
+              </>
+            ) : (
+              <>
+                {[
+                  { label: 'Loading FFmpeg', active: exportProgress > 5 },
+                  { label: 'Loading video', active: exportProgress > 15 },
+                  { label: 'Processing subtitles', active: exportProgress > 35 },
+                  { label: 'Mixing audio', active: exportProgress > 50 },
+                  { label: 'Encoding video', active: exportProgress > 60 },
+                  { label: 'Finalizing', active: exportProgress >= 90 },
+                ].map((step, i) => (
+                  <div key={i} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${step.active ? 'bg-neutral-800 text-white' : 'bg-neutral-900/50 text-neutral-500'}`}>
+                    {step.active ? (
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-neutral-600"></div>
+                    )}
+                    <span className="text-sm">{step.label}</span>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
         
@@ -171,10 +204,22 @@ export const ExportScreen: React.FC = () => {
 
         {/* Info Card */}
         <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-          <p className="text-blue-400 text-xs leading-relaxed">
-            <span className="font-semibold">FFmpeg.wasm</span> will process your video in the browser. 
-            Subtitles will be burned into the video and audio will be mixed automatically.
-          </p>
+          <div className="flex items-start gap-3">
+            <Server className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-blue-400 text-xs leading-relaxed">
+              {usingServerExport ? (
+                <>
+                  <span className="font-semibold">Server-side FFmpeg</span> is processing your video for faster, 
+                  more reliable export with subtitles and audio mixing.
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold">FFmpeg.wasm</span> will process your video in the browser. 
+                  Subtitles will be burned into the video and audio will be mixed automatically.
+                </>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 

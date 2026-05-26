@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { ExportService } from '../services/exportService';
+import { ServerExportService } from '../services/serverExportService';
 
 export function useExport() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [usingServerExport, setUsingServerExport] = useState(false);
   
   const {
     videoSrc,
@@ -26,6 +28,7 @@ export function useExport() {
     setIsExporting(true);
     setExportError(null);
     setExportProgress(0);
+    setUsingServerExport(false);
     
     try {
       // Convert subtitles to SRT format
@@ -33,22 +36,42 @@ export function useExport() {
         ? ExportService.subtitlesToSRT(subtitles)
         : undefined;
       
-      // Export using FFmpeg
-      const outputUrl = await ExportService.export({
-        videoUrl: videoSrc,
-        subtitleContent: srtContent,
-        subtitleStyle: subtitleStyle,
-        audioUrl: audioSrc || undefined,
-        audioVolume: audioVolume,
-        onProgress: (progress, message) => {
-          setExportProgress(progress);
-        },
-      });
+      // Try server-side export first (more reliable with Docker)
+      const serverAvailable = await ServerExportService.checkHealth();
+      
+      let outputUrl: string;
+      
+      if (serverAvailable) {
+        // Use server-side export with FFmpeg in Docker
+        setUsingServerExport(true);
+        outputUrl = await ServerExportService.export({
+          videoUrl: videoSrc,
+          subtitleContent: srtContent,
+          subtitleStyle: subtitleStyle,
+          audioUrl: audioSrc || undefined,
+          audioVolume: audioVolume,
+          onProgress: (progress, message) => {
+            setExportProgress(progress);
+          },
+        });
+      } else {
+        // Fallback to client-side FFmpeg.wasm
+        outputUrl = await ExportService.export({
+          videoUrl: videoSrc,
+          subtitleContent: srtContent,
+          subtitleStyle: subtitleStyle,
+          audioUrl: audioSrc || undefined,
+          audioVolume: audioVolume,
+          onProgress: (progress, message) => {
+            setExportProgress(progress);
+          },
+        });
+      }
       
       setExportedVideoSrc(outputUrl);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Export failed:', error);
-      setExportError('Failed to export video. Please try again.');
+      setExportError(error.message || 'Failed to export video. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -81,6 +104,7 @@ export function useExport() {
     exportedVideoSrc,
     isExporting,
     exportError,
+    usingServerExport,
     startExport,
     shareVideo,
     saveToGallery,
