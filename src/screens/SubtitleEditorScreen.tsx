@@ -5,7 +5,13 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import { SubtitleList } from '../components/SubtitleList';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
 import { SubtitleStylePanel } from '../components/SubtitleStylePanel';
-import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock, Palette, X, List } from 'lucide-react';
+import { ArrowLeft, Type, Play, Pause, Upload, Plus, Save, ChevronRight, Clock, Palette, X, List, ChevronLeft } from 'lucide-react';
+
+interface SubtitlePosition {
+  bottom?: number;
+  left: number;
+  top?: number;
+}
 
 export const SubtitleEditorScreen: React.FC = () => {
   const { 
@@ -32,6 +38,10 @@ export const SubtitleEditorScreen: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showStylePanel, setShowStylePanel] = useState(false);
   const [showSubtitleList, setShowSubtitleList] = useState(true);
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({ bottom: 40, left: 50 });
+  const [isLooping, setIsLooping] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSubtitleControls, setShowSubtitleControls] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -56,6 +66,10 @@ export const SubtitleEditorScreen: React.FC = () => {
     setPlaying(!playing);
   };
 
+  const handleSubtitlePositionChange = (position: SubtitlePosition) => {
+    setSubtitlePosition(position);
+  };
+
   return (
     <div className="h-screen bg-neutral-950 flex flex-col overflow-hidden">
       {/* Header */}
@@ -66,26 +80,44 @@ export const SubtitleEditorScreen: React.FC = () => {
         <h2 className="text-white font-semibold text-sm flex items-center gap-2">
           <Type className="w-4 h-4" /> Subtitle Editor
         </h2>
-        <button onClick={downloadSRT} className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
-          <Save className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Subtitle Position Toggle */}
+          <button 
+            onClick={() => setShowSubtitleControls(!showSubtitleControls)}
+            className={`p-2 rounded-lg transition-colors ${showSubtitleControls ? 'bg-red-600 text-white' : 'bg-white/5 hover:bg-white/10 text-white'}`}
+            title="Subtitle Position Controls"
+          >
+            <Type className="w-4 h-4" />
+          </button>
+          <button onClick={downloadSRT} className="px-2 py-1.5 bg-white/5 hover:bg-white/10 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
+            <Save className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </header>
 
       {/* Main Content - Video on top, editing below */}
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* Video Area - Fixed size */}
-        <div className="flex items-center justify-center p-2 bg-black shrink-0 min-h-[250px]">
+        <div className="flex items-center justify-center p-2 bg-black shrink-0 min-h-[250px] relative">
           {videoSrc ? (
             <div className="w-full max-w-full">
               <VideoPlayer
                 src={videoSrc}
                 onTimeUpdate={handleTimeUpdate}
                 autoPlay={playing}
+                playbackSpeed={playbackSpeed}
+                loop={isLooping}
+                showSubtitleControls={true}
+                subtitlePosition={subtitlePosition}
+                onSubtitlePositionChange={handleSubtitlePositionChange}
+                onPlaybackSpeedChange={setPlaybackSpeed}
                 overlay={
                   <SubtitleOverlay
                     subtitles={subtitles}
                     currentTime={currentTime}
+                    position={subtitlePosition}
+                    onPositionChange={handleSubtitlePositionChange}
                   />
                 }
               />
@@ -176,6 +208,30 @@ export const SubtitleEditorScreen: React.FC = () => {
               <span className="text-neutral-400 text-xs font-mono">
                 {formatDuration(currentTime)}
               </span>
+              {/* Loop Toggle */}
+              <button 
+                onClick={() => setIsLooping(!isLooping)}
+                className={`p-2 rounded-lg transition-colors ${isLooping ? 'text-red-500' : 'text-neutral-500 hover:text-white'}`}
+                title="Loop"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+              {/* Speed Control */}
+              <select 
+                value={playbackSpeed}
+                onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                className="bg-neutral-800 text-white text-xs px-2 py-1 rounded border border-white/10"
+              >
+                <option value="0.25">0.25x</option>
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1">1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
             </div>
             
             <button onClick={goToNext} className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white text-xs font-medium rounded-lg transition-all flex items-center gap-1.5">
