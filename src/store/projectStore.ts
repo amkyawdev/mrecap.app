@@ -10,7 +10,14 @@ export interface SubtitleStyle {
   backgroundOpacity: number;
   position: 'top' | 'center' | 'bottom';
   fontWeight: 'normal' | 'bold';
+  fontStyle: 'normal' | 'italic';
+  textDecoration: 'none' | 'underline';
   textShadow: boolean;
+  outlineWidth: number;
+  outlineColor: string;
+  padding: number;
+  borderRadius: number;
+  alignment: 'left' | 'center' | 'right';
 }
 
 const defaultSubtitleStyle: SubtitleStyle = {
@@ -21,7 +28,14 @@ const defaultSubtitleStyle: SubtitleStyle = {
   backgroundOpacity: 0.75,
   position: 'bottom',
   fontWeight: 'bold',
+  fontStyle: 'normal',
+  textDecoration: 'none',
   textShadow: true,
+  outlineWidth: 2,
+  outlineColor: '#000000',
+  padding: 8,
+  borderRadius: 4,
+  alignment: 'center',
 };
 
 interface VideoState {
