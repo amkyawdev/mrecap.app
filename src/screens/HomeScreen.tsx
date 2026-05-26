@@ -3,10 +3,11 @@ import { useVideoEditor } from '../hooks/useVideoEditor';
 import { useProjectStore } from '../store/projectStore';
 import { usePWAPrompt } from '../hooks/usePWAPrompt';
 import { Film, FolderOpen, ChevronRight, Smartphone, Video, Type, Mic, Download, Wand2, Clapperboard, Loader2 } from 'lucide-react';
+import { WaterDropLoader } from '../components/WaterDropLoader';
 
 export const HomeScreen: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { loadVideo, goToVideoEditor, videoSrc, isLoading } = useVideoEditor();
+  const { loadVideo, goToVideoEditor, videoSrc, isLoading, loadProgress } = useVideoEditor();
   const { setCurrentScreen } = useProjectStore();
   const { needsInstall, installApp, isInstalled } = usePWAPrompt();
   const [isLoaded, setIsLoaded] = useState(false);
@@ -75,23 +76,25 @@ export const HomeScreen: React.FC = () => {
           </p>
 
           <div className="flex flex-col items-center gap-3 md:gap-4">
-            <button 
-              onClick={handleSelectVideo} 
-              disabled={isLoading}
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 hover:shadow-red-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <FolderOpen className="w-4 h-4" />
-                  Select Video
-                </>
-              )}
-            </button>
+            {isLoading ? (
+              // Water Drop Loading Animation
+              <div className="flex flex-col items-center gap-4 p-6 bg-neutral-900/80 rounded-2xl border border-white/10">
+                <WaterDropLoader 
+                  progress={loadProgress} 
+                  size={140} 
+                  color="#dc2626"
+                  text="Loading video..."
+                />
+              </div>
+            ) : (
+              <button 
+                onClick={handleSelectVideo} 
+                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 hover:shadow-red-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base"
+              >
+                <FolderOpen className="w-4 h-4" />
+                Select Video
+              </button>
+            )}
             
             {videoSrc && !isLoading && (
               <button 

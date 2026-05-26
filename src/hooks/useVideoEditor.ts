@@ -4,6 +4,7 @@ import { useProjectStore } from '../store/projectStore';
 export function useVideoEditor() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   
   const {
     videoSrc,
@@ -25,26 +26,47 @@ export function useVideoEditor() {
 
   const loadVideo = useCallback(async (file: File) => {
     setIsLoading(true);
+    setLoadProgress(0);
+    
     try {
+      // Create object URL immediately for fast start
       const url = URL.createObjectURL(file);
       setVideoSrc(url);
       setVideoFile(file);
+      setLoadProgress(50);
       
-      // Get duration
+      // Get duration in background
       const video = document.createElement('video');
+      video.preload = 'metadata'; // Only load metadata first
+      
+      video.onloadedmetadata = () => {
+        setVideoDuration(video.duration);
+        setLoadProgress(100);
+        // Small delay to show 100% before hiding
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 300);
+      };
+      
+      video.onerror = () => {
+        console.error('Failed to load video metadata');
+        setIsLoading(false);
+      };
+      
       video.src = url;
       
-      await new Promise((resolve) => {
-        video.onloadedmetadata = resolve;
-      });
+      // Fallback timeout in case metadata doesn't fire
+      setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      }, 5000);
       
-      setVideoDuration(video.duration);
     } catch (error) {
       console.error('Failed to load video:', error);
-    } finally {
       setIsLoading(false);
     }
-  }, [setVideoSrc, setVideoFile, setVideoDuration]);
+  }, [setVideoSrc, setVideoFile, setVideoDuration, isLoading]);
 
   const play = useCallback(() => {
     if (videoRef.current) {
@@ -102,6 +124,7 @@ export function useVideoEditor() {
     trimStart,
     trimEnd,
     isLoading,
+    loadProgress,
     loadVideo,
     play,
     pause,
