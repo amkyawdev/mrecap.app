@@ -1,3 +1,8 @@
+/**
+ * Server-side Export API Route
+ * Uses FFmpeg for video export
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -7,8 +12,108 @@ import os from 'os';
 
 const execAsync = promisify(exec);
 
-// Supported subtitle formats
-const SRT_PATTERN = /\d+\n\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}\n[\s\S]+?(?=\n\n|$)/;
+// Video effect types for server processing
+interface VideoEffect {
+  id: string;
+  type: 'brightness' | 'contrast' | 'saturation' | 'blur' | 'sharpen' | 'sepia' | 'grayscale' | 'invert' | 'vintage' | 'cool' | 'warm';
+  value: number;
+  enabled: boolean;
+}
+
+interface ColorFilter {
+  id: string;
+  name: string;
+  preset: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  hue: number;
+  enabled: boolean;
+}
+
+// Build FFmpeg video filter string
+function buildVideoFilter(options: {
+  effects?: VideoEffect[];
+  filter?: ColorFilter | null;
+  rotation?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  speed?: number;
+}): string {
+  const filters: string[] = [];
+  
+  // Apply color filter
+  if (options.filter && options.filter.enabled) {
+    if (options.filter.brightness !== 1 || options.filter.contrast !== 1 || 
+        options.filter.saturation !== 1 || options.filter.hue !== 0) {
+      filters.push(`eq=brightness=${options.filter.brightness - 1}:contrast=${options.filter.contrast}:saturation=${options.filter.saturation}:hue=${options.filter.hue}`);
+    }
+  }
+  
+  // Apply video effects
+  if (options.effects) {
+    options.effects.forEach(effect => {
+      if (!effect.enabled) return;
+      
+      switch (effect.type) {
+        case 'brightness':
+          filters.push(`eq=brightness=${effect.value}`);
+          break;
+        case 'contrast':
+          filters.push(`eq=contrast=${1 + effect.value}`);
+          break;
+        case 'saturation':
+          filters.push(`eq=saturation=${1 + effect.value}`);
+          break;
+        case 'blur':
+          filters.push(`boxblur=${effect.value}:${effect.value}`);
+          break;
+        case 'sepia':
+          filters.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+          break;
+        case 'grayscale':
+          filters.push(`hue=s=0`);
+          break;
+        case 'invert':
+          filters.push(`negate`);
+          break;
+        case 'vintage':
+          filters.push(`curves=all='0/0 0.25/0.1 0.6/0.4 1/0.95'`);
+          break;
+        case 'cool':
+          filters.push(`hue=h=10`);
+          break;
+        case 'warm':
+          filters.push(`hue=h=-10:s=1.2`);
+          break;
+      }
+    });
+  }
+  
+  // Apply rotation
+  if (options.rotation === 90) {
+    filters.push('transpose=1');
+  } else if (options.rotation === 180) {
+    filters.push('transpose=1,transpose=1');
+  } else if (options.rotation === 270) {
+    filters.push('transpose=2');
+  }
+  
+  // Apply flip
+  if (options.flipH) {
+    filters.push('hflip');
+  }
+  if (options.flipV) {
+    filters.push('vflip');
+  }
+  
+  // Apply speed
+  if (options.speed && options.speed !== 1) {
+    filters.push(`setpts=${1/options.speed}*PTS`);
+  }
+  
+  return filters.length > 0 ? filters.join(',') : '';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +122,17 @@ export async function POST(request: NextRequest) {
     const subtitle = formData.get('subtitle') as string | null;
     const audio = formData.get('audio') as File | null;
     const audioVolume = parseFloat(formData.get('audioVolume') as string) || 1;
+    
+    // Get video effect options
+    const effectsJson = formData.get('effects') as string;
+    const filterJson = formData.get('filter') as string;
+    const rotation = parseInt(formData.get('rotation') as string) || 0;
+    const flipH = formData.get('flipH') === 'true';
+    const flipV = formData.get('flipV') === 'true';
+    const speed = parseFloat(formData.get('speed') as string) || 1;
+
+    const effects = effectsJson ? JSON.parse(effectsJson) : undefined;
+    const filter = filterJson ? JSON.parse(filterJson) : null;
 
     if (!video) {
       return NextResponse.json(
@@ -34,9 +150,19 @@ export async function POST(request: NextRequest) {
     const videoPath = path.join(tempDir, 'input.mp4');
     await fs.writeFile(videoPath, videoBuffer);
 
-    // Prepare output path
+    // Build video filter
+    const videoFilterStr = buildVideoFilter({ effects, filter, rotation, flipH, flipV, speed });
+    
+    // Prepare output path and FFmpeg args
     const outputPath = path.join(tempDir, 'output.mp4');
     let ffmpegArgs: string[] = ['-i', 'input.mp4'];
+    
+    let vfParts: string[] = [];
+    
+    // Add video filter if exists
+    if (videoFilterStr) {
+      vfParts.push(videoFilterStr);
+    }
 
     // Add subtitles if provided
     if (subtitle && subtitle.trim()) {
@@ -48,10 +174,7 @@ export async function POST(request: NextRequest) {
       await convertSrtToAss(subtitle, assPath);
       
       // Burn subtitles into video with styling
-      ffmpegArgs.push(
-        '-vf', `ass=${assPath}`,
-        '-c:a', 'copy'
-      );
+      vfParts.push(`ass=${assPath}`);
     }
 
     // Add audio overlay if provided
@@ -72,6 +195,11 @@ export async function POST(request: NextRequest) {
         // Replace audio with voiceover
         ffmpegArgs.push('-i', 'audio.mp3', '-c:a', 'aac', '-b:a', '128k', '-map', '0:v', '-map', '1:a');
       }
+    }
+
+    // Apply video filters
+    if (vfParts.length > 0) {
+      ffmpegArgs.push('-vf', vfParts.join(','));
     }
 
     // Fast encoding settings

@@ -4,6 +4,7 @@
  */
 
 import { SubtitleStyle } from '../store/projectStore';
+import { VideoEffect, ColorFilter } from '../store/timelineStore';
 
 export interface ServerExportOptions {
   videoUrl: string;
@@ -12,6 +13,14 @@ export interface ServerExportOptions {
   audioUrl?: string;
   audioVolume?: number;
   onProgress?: (progress: number, message?: string) => void;
+  // Video effects
+  effects?: VideoEffect[];
+  filter?: ColorFilter | null;
+  rotation?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  speed?: number;
+  volume?: number;
 }
 
 export class ServerExportService {
@@ -46,6 +55,13 @@ export class ServerExportService {
       subtitleContent, 
       audioUrl, 
       audioVolume = 1, 
+      effects,
+      filter,
+      rotation,
+      flipH,
+      flipV,
+      speed,
+      volume,
       onProgress 
     } = options;
     
@@ -79,6 +95,29 @@ export class ServerExportService {
       const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mpeg' });
       formData.append('audio', audioFile);
       formData.append('audioVolume', audioVolume.toString());
+    }
+    
+    // Add video effects
+    if (effects && effects.length > 0) {
+      formData.append('effects', JSON.stringify(effects));
+    }
+    if (filter) {
+      formData.append('filter', JSON.stringify(filter));
+    }
+    if (rotation && rotation !== 0) {
+      formData.append('rotation', rotation.toString());
+    }
+    if (flipH) {
+      formData.append('flipH', 'true');
+    }
+    if (flipV) {
+      formData.append('flipV', 'true');
+    }
+    if (speed && speed !== 1) {
+      formData.append('speed', speed.toString());
+    }
+    if (volume !== undefined && volume !== 1) {
+      formData.append('volume', volume.toString());
     }
     
     onProgress?.(25, 'Processing video...');

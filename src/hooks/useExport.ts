@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
+import { useTimelineStore } from '../store/timelineStore';
 import { ExportService } from '../services/exportService';
 import { ServerExportService } from '../services/serverExportService';
 
@@ -22,6 +23,11 @@ export function useExport() {
     reset,
   } = useProjectStore();
 
+  const {
+    videoClips,
+    selectedClipId,
+  } = useTimelineStore();
+
   const startExport = useCallback(async () => {
     if (!videoSrc) return;
     
@@ -35,6 +41,16 @@ export function useExport() {
       const srtContent = subtitles.length > 0 
         ? ExportService.subtitlesToSRT(subtitles)
         : undefined;
+      
+      // Get selected clip effects
+      const selectedClip = videoClips.find(c => c.id === selectedClipId) || videoClips[0];
+      const clipEffects = selectedClip?.effects || [];
+      const clipFilter = selectedClip?.filter || null;
+      const clipRotation = selectedClip?.rotation || 0;
+      const clipFlipH = selectedClip?.flipH || false;
+      const clipFlipV = selectedClip?.flipV || false;
+      const clipSpeed = selectedClip?.speed || 1;
+      const clipVolume = selectedClip?.volume || 1;
       
       let outputUrl: string;
       
@@ -56,6 +72,13 @@ export function useExport() {
               subtitleStyle: subtitleStyle,
               audioUrl: audioSrc || undefined,
               audioVolume: audioVolume,
+              effects: clipEffects,
+              filter: clipFilter,
+              rotation: clipRotation,
+              flipH: clipFlipH,
+              flipV: clipFlipV,
+              speed: clipSpeed,
+              volume: clipVolume,
               onProgress: (progress, message) => {
                 setExportProgress(progress);
               },
@@ -68,6 +91,13 @@ export function useExport() {
               subtitleStyle: subtitleStyle,
               audioUrl: audioSrc || undefined,
               audioVolume: audioVolume,
+              effects: clipEffects,
+              filter: clipFilter,
+              rotation: clipRotation,
+              flipH: clipFlipH,
+              flipV: clipFlipV,
+              speed: clipSpeed,
+              volume: clipVolume,
               onProgress: (progress, message) => {
                 setExportProgress(progress);
               },
@@ -81,6 +111,13 @@ export function useExport() {
             subtitleStyle: subtitleStyle,
             audioUrl: audioSrc || undefined,
             audioVolume: audioVolume,
+            effects: clipEffects,
+            filter: clipFilter,
+            rotation: clipRotation,
+            flipH: clipFlipH,
+            flipV: clipFlipV,
+            speed: clipSpeed,
+            volume: clipVolume,
             onProgress: (progress, message) => {
               setExportProgress(progress);
             },
@@ -94,6 +131,13 @@ export function useExport() {
           subtitleStyle: subtitleStyle,
           audioUrl: audioSrc || undefined,
           audioVolume: audioVolume,
+          effects: clipEffects,
+          filter: clipFilter,
+          rotation: clipRotation,
+          flipH: clipFlipH,
+          flipV: clipFlipV,
+          speed: clipSpeed,
+          volume: clipVolume,
           onProgress: (progress, message) => {
             setExportProgress(progress);
           },
@@ -107,7 +151,7 @@ export function useExport() {
     } finally {
       setIsExporting(false);
     }
-  }, [videoSrc, audioSrc, subtitles, subtitleStyle, audioVolume, setExportProgress, setExportedVideoSrc]);
+  }, [videoSrc, audioSrc, subtitles, subtitleStyle, audioVolume, videoClips, selectedClipId, setExportProgress, setExportedVideoSrc]);
 
   const shareVideo = useCallback(async () => {
     if (!exportedVideoSrc) return;

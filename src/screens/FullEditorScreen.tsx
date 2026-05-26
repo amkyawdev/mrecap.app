@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useTimelineStore, VideoClip, AudioTrack } from '../store/timelineStore';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useTimelineStore, VideoClip, AudioTrack, VideoEffect, ColorFilter } from '../store/timelineStore';
 import { useProjectStore } from '../store/projectStore';
 import { Timeline } from '../components/Timeline';
 import { EffectsPanel } from '../components/EffectsPanel';
@@ -13,6 +13,71 @@ interface SubtitlePosition {
   bottom?: number;
   left: number;
   top?: number;
+}
+
+// Generate CSS filter string from effects and filter
+function generateFilterString(effects: VideoEffect[], filter: ColorFilter | null): string {
+  const filters: string[] = [];
+  
+  // Apply color filter
+  if (filter && filter.enabled) {
+    if (filter.brightness !== 1) {
+      filters.push(`brightness(${filter.brightness})`);
+    }
+    if (filter.contrast !== 1) {
+      filters.push(`contrast(${filter.contrast})`);
+    }
+    if (filter.saturation !== 1) {
+      filters.push(`saturate(${filter.saturation})`);
+    }
+    if (filter.hue !== 0) {
+      filters.push(`hue-rotate(${filter.hue}deg)`);
+    }
+  }
+  
+  // Apply video effects
+  effects.forEach(effect => {
+    if (!effect.enabled) return;
+    
+    switch (effect.type) {
+      case 'brightness':
+        filters.push(`brightness(${1 + effect.value})`);
+        break;
+      case 'contrast':
+        filters.push(`contrast(${1 + effect.value})`);
+        break;
+      case 'saturation':
+        filters.push(`saturate(${1 + effect.value})`);
+        break;
+      case 'blur':
+        filters.push(`blur(${effect.value}px)`);
+        break;
+      case 'sharpen':
+        // sharpen is not directly supported, use contrast as approximation
+        filters.push(`contrast(${1 + effect.value * 0.3})`);
+        break;
+      case 'sepia':
+        filters.push(`sepia(${effect.value})`);
+        break;
+      case 'grayscale':
+        filters.push(`grayscale(${effect.value})`);
+        break;
+      case 'invert':
+        filters.push(`invert(${effect.value})`);
+        break;
+      case 'vintage':
+        filters.push(`sepia(${effect.value * 0.4}) contrast(${1 + effect.value * 0.1})`);
+        break;
+      case 'cool':
+        filters.push(`hue-rotate(${effect.value * 20}deg)`);
+        break;
+      case 'warm':
+        filters.push(`sepia(${effect.value * 0.2}) saturate(${1 + effect.value * 0.2})`);
+        break;
+    }
+  });
+  
+  return filters.length > 0 ? filters.join(' ') : 'none';
 }
 
 export const FullEditorScreen: React.FC = () => {
@@ -47,6 +112,36 @@ export const FullEditorScreen: React.FC = () => {
   const [muted, setMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Get selected clip for preview styling
+  const selectedClip = useMemo(() => {
+    return videoClips.find(c => c.id === selectedClipId);
+  }, [videoClips, selectedClipId]);
+
+  // Generate filter styles for video preview
+  const videoStyles = useMemo(() => {
+    const clip = selectedClip || videoClips[0];
+    if (!clip) return {};
+
+    const filterStr = generateFilterString(clip.effects, clip.filter);
+    
+    // Build transform string
+    const transforms: string[] = [];
+    if (clip.rotation) {
+      transforms.push(`rotate(${clip.rotation}deg)`);
+    }
+    if (clip.flipH) {
+      transforms.push('scaleX(-1)');
+    }
+    if (clip.flipV) {
+      transforms.push('scaleY(-1)');
+    }
+
+    return {
+      filter: filterStr,
+      transform: transforms.length > 0 ? transforms.join(' ') : undefined,
+    };
+  }, [selectedClip, videoClips]);
 
   // Initialize with video clip from project store
   useEffect(() => {
@@ -472,6 +567,10 @@ export const FullEditorScreen: React.FC = () => {
                 playsInline
                 loop={isLooping}
                 muted={muted}
+                style={{
+                  filter: videoStyles.filter || 'none',
+                  transform: videoStyles.transform,
+                }}
                 className="w-full h-full object-contain cursor-pointer"
                 onClick={togglePlay}
               />

@@ -4,6 +4,7 @@
  */
 
 import { SubtitleStyle } from '../store/projectStore';
+import { VideoEffect, ColorFilter } from '../store/timelineStore';
 
 export interface ExportOptions {
   videoUrl: string;
@@ -13,6 +14,15 @@ export interface ExportOptions {
   audioVolume?: number;
   quality?: 'ultra-fast' | 'fast' | 'balanced' | 'high-quality';
   onProgress?: (progress: number, message?: string) => void;
+  // Video effects
+  effects?: VideoEffect[];
+  filter?: ColorFilter | null;
+  // Transform
+  rotation?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  speed?: number;
+  volume?: number;
 }
 
 // Quality presets for fast export
@@ -22,6 +32,92 @@ const QUALITY_PRESETS = {
   'balanced': { preset: 'medium', crf: 23, audioBitrate: '192k' },
   'high-quality': { preset: 'slow', crf: 20, audioBitrate: '256k' },
 };
+
+// Build FFmpeg video filter string from effects and filter
+interface VideoFilterOptions {
+  effects?: VideoEffect[];
+  filter?: ColorFilter | null;
+  rotation?: number;
+  flipH?: boolean;
+  flipV?: boolean;
+  speed?: number;
+}
+
+function buildVideoFilter(options: VideoFilterOptions): string {
+  const filters: string[] = [];
+  
+  // Apply color filter (brightness, contrast, saturation, hue)
+  if (options.filter && options.filter.enabled) {
+    if (options.filter.brightness !== 1 || options.filter.contrast !== 1 || 
+        options.filter.saturation !== 1 || options.filter.hue !== 0) {
+      filters.push(`eq=brightness=${options.filter.brightness - 1}:contrast=${options.filter.contrast}:saturation=${options.filter.saturation}:hue=${options.filter.hue}`);
+    }
+  }
+  
+  // Apply video effects
+  if (options.effects) {
+    options.effects.forEach(effect => {
+      if (!effect.enabled) return;
+      
+      switch (effect.type) {
+        case 'brightness':
+          filters.push(`eq=brightness=${effect.value}`);
+          break;
+        case 'contrast':
+          filters.push(`eq=contrast=${1 + effect.value}`);
+          break;
+        case 'saturation':
+          filters.push(`eq=saturation=${1 + effect.value}`);
+          break;
+        case 'blur':
+          filters.push(`boxblur=${effect.value}:${effect.value}`);
+          break;
+        case 'sepia':
+          filters.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+          break;
+        case 'grayscale':
+          filters.push(`hue=s=0`);
+          break;
+        case 'invert':
+          filters.push(`negate`);
+          break;
+        case 'vintage':
+          filters.push(`curves=all='0/0 0.25/0.1 0.6/0.4 1/0.95'`);
+          break;
+        case 'cool':
+          filters.push(`hue=h=10`);
+          break;
+        case 'warm':
+          filters.push(`hue=h=-10:s=1.2`);
+          break;
+      }
+    });
+  }
+  
+  // Apply rotation
+  if (options.rotation === 90) {
+    filters.push('transpose=1');
+  } else if (options.rotation === 180) {
+    filters.push('transpose=1,transpose=1');
+  } else if (options.rotation === 270) {
+    filters.push('transpose=2');
+  }
+  
+  // Apply flip
+  if (options.flipH) {
+    filters.push('hflip');
+  }
+  if (options.flipV) {
+    filters.push('vflip');
+  }
+  
+  // Apply speed (setpts for video)
+  if (options.speed && options.speed !== 1) {
+    filters.push(`setpts=${1/options.speed}*PTS`);
+  }
+  
+  return filters.length > 0 ? filters.join(',') : '';
+}
 
 export class ExportService {
   private static progress = 0;
@@ -78,13 +174,21 @@ export class ExportService {
       audioUrl, 
       audioVolume = 1, 
       quality = 'fast',
+      effects,
+      filter,
+      rotation,
+      flipH,
+      flipV,
+      speed,
+      volume = 1,
       onProgress 
     } = options;
     
     this.progress = 0;
     
     // Quick export if no modifications needed
-    if (!subtitleContent && !audioUrl) {
+    if (!subtitleContent && !audioUrl && !effects?.length && !filter?.enabled && 
+        !rotation && !flipH && !flipV && (!speed || speed === 1) && volume === 1) {
       onProgress?.(10, 'Quick export...');
       onProgress?.(50, 'Processing...');
       onProgress?.(100, 'Done!');
@@ -105,7 +209,23 @@ export class ExportService {
       await this.ffmpeg.writeFile('input.mp4', videoData);
       onProgress?.(25, 'Video loaded');
 
+      // Build video filter string
+      const videoFilterStr = buildVideoFilter({
+        effects,
+        filter,
+        rotation,
+        flipH,
+        flipV,
+        speed,
+      });
+
       let ffmpegArgs: string[] = ['-i', 'input.mp4'];
+      let vfParts: string[] = [];
+
+      // Add video filter if exists
+      if (videoFilterStr) {
+        vfParts.push(videoFilterStr);
+      }
 
       // Subtitles
       if (subtitleContent) {
@@ -113,24 +233,58 @@ export class ExportService {
         const srtData = new TextEncoder().encode(subtitleContent);
         await this.ffmpeg.writeFile('subs.srt', srtData);
         const styleString = this.buildSubtitleStyle(subtitleStyle);
-        ffmpegArgs.push('-vf', `subtitles=subs.srt:force_style='${styleString}'`);
+        vfParts.push(`subtitles=subs.srt:force_style='${styleString}'`);
       }
 
-      // Audio
+      // Audio - build audio filter
+      let audioFilterComplex = '';
+      let audioStream = '0:a';
+      
       if (audioUrl) {
         onProgress?.(40, 'Mixing audio...');
         const audioData = await fetchFile(audioUrl);
         await this.ffmpeg.writeFile('audio.mp3', audioData);
         
-        if (audioVolume < 1) {
-          ffmpegArgs.push(
-            '-filter_complex', 
-            `[0:a]volume=0.3[a0];[1:a]volume=${audioVolume}[a1];[a0][a1]amix=inputs=2:duration=longest[aout]`, 
-            '-map', '[aout]'
-          );
+        if (audioVolume < 1 || volume !== 1) {
+          // Mix original audio with voiceover
+          ffmpegArgs.push('-i', 'audio.mp3');
+          audioFilterComplex = `[0:a]volume=${volume}[a0];[1:a]volume=${audioVolume}[a1];[a0][a1]amix=inputs=2:duration=longest[aout]`;
         } else {
-          ffmpegArgs.push('-i', 'audio.mp3', '-c:a', 'aac', '-b:a', preset.audioBitrate, '-map', '0:v', '-map', '1:a');
+          // Replace audio with voiceover
+          ffmpegArgs.push('-i', 'audio.mp3');
+          audioFilterComplex = '[1:a]';
+          audioStream = '[1:a]';
         }
+      } else if (volume !== 1) {
+        // Adjust volume without adding audio
+        audioFilterComplex = `[0:a]volume=${volume}[aout]`;
+        audioStream = '[aout]';
+      }
+
+      // Build final filter complex
+      if (vfParts.length > 0 || audioFilterComplex) {
+        // Handle speed change for audio separately (setpts for video, atempo for audio)
+        let audioFilterStr = audioFilterComplex;
+        if (speed && speed !== 1 && audioUrl) {
+          // Add atempo for audio speed (FFmpeg.wasm atempo range: 0.5-2.0)
+          const atempoValue = Math.min(2, Math.max(0.5, speed));
+          if (audioFilterStr) {
+            audioFilterStr = `[aout]atempo=${atempoValue}[aout]`;
+          }
+        }
+        
+        if (vfParts.length > 0 && audioFilterStr) {
+          ffmpegArgs.push('-filter_complex', `${vfParts.join(',')},${audioFilterStr}`);
+        } else if (vfParts.length > 0) {
+          ffmpegArgs.push('-vf', vfParts.join(','));
+        } else if (audioFilterStr) {
+          ffmpegArgs.push('-filter_complex', audioFilterStr);
+        }
+        
+        if (vfParts.length > 0) {
+          ffmpegArgs.push('-map', '0:v');
+        }
+        ffmpegArgs.push('-map', audioStream);
       }
 
       // Fast output settings
