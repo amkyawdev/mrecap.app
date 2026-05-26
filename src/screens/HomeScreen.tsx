@@ -2,11 +2,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useVideoEditor } from '../hooks/useVideoEditor';
 import { useProjectStore } from '../store/projectStore';
 import { usePWAPrompt } from '../hooks/usePWAPrompt';
-import { Film, FolderOpen, ChevronRight, Smartphone, Video, Type, Mic, Download, Wand2, Clapperboard } from 'lucide-react';
+import { Film, FolderOpen, ChevronRight, Smartphone, Video, Type, Mic, Download, Wand2, Clapperboard, Loader2 } from 'lucide-react';
 
 export const HomeScreen: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { loadVideo, goToNext, videoSrc } = useVideoEditor();
+  const { loadVideo, goToVideoEditor, videoSrc, isLoading } = useVideoEditor();
   const { setCurrentScreen } = useProjectStore();
   const { needsInstall, installApp, isInstalled } = usePWAPrompt();
   const [isLoaded, setIsLoaded] = useState(false);
@@ -24,16 +24,12 @@ export const HomeScreen: React.FC = () => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         await loadVideo(file);
+        // Navigate to video editor screen
+        goToVideoEditor();
       }
     };
     
     input.click();
-  };
-
-  const handleProceed = () => {
-    if (videoSrc) {
-      goToNext();
-    }
   };
 
   const handleFullEditor = () => {
@@ -81,15 +77,25 @@ export const HomeScreen: React.FC = () => {
           <div className="flex flex-col items-center gap-3 md:gap-4">
             <button 
               onClick={handleSelectVideo} 
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 hover:shadow-red-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base"
+              disabled={isLoading}
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-red-600/25 hover:shadow-red-500/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FolderOpen className="w-4 h-4" />
-              Select Video
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <FolderOpen className="w-4 h-4" />
+                  Select Video
+                </>
+              )}
             </button>
             
-            {videoSrc && (
+            {videoSrc && !isLoading && (
               <button 
-                onClick={handleProceed} 
+                onClick={goToVideoEditor} 
                 className="w-full sm:w-auto px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-red-500/50 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm"
               >
                 Continue

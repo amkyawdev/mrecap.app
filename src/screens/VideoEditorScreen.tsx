@@ -28,7 +28,7 @@ export const VideoEditorScreen: React.FC = () => {
     seek,
     handleTimeUpdate,
     setTrimRange,
-    goToNext,
+    goToSubtitleEditor,
     reset,
   } = useVideoEditor();
 
@@ -43,6 +43,10 @@ export const VideoEditorScreen: React.FC = () => {
     if (file) {
       await loadVideo(file);
     }
+  };
+
+  const handleGoToSubtitles = () => {
+    goToSubtitleEditor();
   };
 
   const handleSubtitlePositionChange = (position: { bottom?: number; left: number; top?: number }) => {
@@ -144,7 +148,7 @@ export const VideoEditorScreen: React.FC = () => {
             <RotateCcw className="w-4 h-4" /> Start Over
           </button>
           
-          <button onClick={goToNext} className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2">
+          <button onClick={handleGoToSubtitles} className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2">
             Continue to Subtitles <ChevronRight className="w-4 h-4" />
           </button>
         </div>

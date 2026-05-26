@@ -82,7 +82,12 @@ export function useVideoEditor() {
     console.log('Trimming video from', trimStart, 'to', trimEnd);
   }, [trimStart, trimEnd]);
 
-  const goToNext = useCallback(() => {
+  const goToVideoEditor = useCallback(() => {
+    pause();
+    setCurrentScreen('video');
+  }, [pause, setCurrentScreen]);
+
+  const goToSubtitleEditor = useCallback(() => {
     pause();
     setCurrentScreen('subtitle');
   }, [pause, setCurrentScreen]);
@@ -104,7 +109,8 @@ export function useVideoEditor() {
     handleTimeUpdate,
     trimVideo,
     setTrimRange,
-    goToNext,
+    goToVideoEditor,
+    goToSubtitleEditor,
     reset,
   };
 }
