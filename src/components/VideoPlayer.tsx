@@ -233,7 +233,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full max-w-2xl mx-auto bg-black rounded-lg overflow-hidden"
+      className="relative w-full bg-black overflow-hidden"
       onMouseMove={() => setShowControls(true)}
     >
       {/* Video Container - Fixed aspect ratio 16:9, centered */}
@@ -241,6 +241,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
         className="relative w-full bg-black"
         style={{ 
           aspectRatio: '16/9',
+          maxWidth: '100%',
         }}
       >
         <video
@@ -251,6 +252,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           muted={muted}
           onClick={handleVideoClick}
           className="absolute inset-0 w-full h-full object-contain cursor-pointer"
+          style={{ maxHeight: '100%', maxWidth: '100%' }}
         />
         
         {/* Overlay for subtitles */}
