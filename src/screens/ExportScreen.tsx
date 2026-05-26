@@ -21,6 +21,20 @@ export const ExportScreen: React.FC = () => {
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
+  const displayError = localError || exportError;
+
+  const handleRetry = () => {
+    setLocalError(null);
+    startExport();
+  };
+
+  // Sync error from useExport hook
+  useEffect(() => {
+    if (exportError) {
+      setLocalError(exportError);
+    }
+  }, [exportError]);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -221,22 +235,42 @@ export const ExportScreen: React.FC = () => {
             </p>
           </div>
         </div>
-      </div>
 
-      {exportError && (
-        <div className="mx-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-red-500" />
-          <span className="text-red-400 text-sm">{exportError}</span>
-        </div>
-      )}
+        {/* Error Message */}
+        {displayError && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-400 text-sm font-medium">Export Failed</p>
+                <p className="text-red-400/70 text-xs mt-1">{displayError}</p>
+                <button 
+                  onClick={handleRetry}
+                  className="mt-2 px-3 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 text-xs rounded transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="p-4">
         <button 
           onClick={startExport} 
           className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!videoSrc}
+          disabled={!videoSrc || isExporting}
         >
-          <Video className="w-4 h-4" /> Export with FFmpeg
+          {isExporting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Exporting...
+            </>
+          ) : (
+            <>
+              <Video className="w-4 h-4" /> Export with FFmpeg
+            </>
+          )}
         </button>
         
         {!videoSrc && (

@@ -36,26 +36,58 @@ export function useExport() {
         ? ExportService.subtitlesToSRT(subtitles)
         : undefined;
       
-      // Try server-side export first (more reliable with Docker)
-      const serverAvailable = await ServerExportService.checkHealth();
-      
       let outputUrl: string;
       
-      if (serverAvailable) {
-        // Use server-side export with FFmpeg in Docker
-        setUsingServerExport(true);
-        outputUrl = await ServerExportService.export({
-          videoUrl: videoSrc,
-          subtitleContent: srtContent,
-          subtitleStyle: subtitleStyle,
-          audioUrl: audioSrc || undefined,
-          audioVolume: audioVolume,
-          onProgress: (progress, message) => {
-            setExportProgress(progress);
-          },
-        });
+      // Try server-side export first (more reliable with Docker)
+      // Only try if we're in a server environment
+      if (typeof window !== 'undefined') {
+        try {
+          const serverAvailable = await Promise.race([
+            ServerExportService.checkHealth(),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000)) // 2s timeout
+          ]);
+          
+          if (serverAvailable) {
+            // Use server-side export with FFmpeg in Docker
+            setUsingServerExport(true);
+            outputUrl = await ServerExportService.export({
+              videoUrl: videoSrc,
+              subtitleContent: srtContent,
+              subtitleStyle: subtitleStyle,
+              audioUrl: audioSrc || undefined,
+              audioVolume: audioVolume,
+              onProgress: (progress, message) => {
+                setExportProgress(progress);
+              },
+            });
+          } else {
+            // Fallback to client-side FFmpeg.wasm
+            outputUrl = await ExportService.export({
+              videoUrl: videoSrc,
+              subtitleContent: srtContent,
+              subtitleStyle: subtitleStyle,
+              audioUrl: audioSrc || undefined,
+              audioVolume: audioVolume,
+              onProgress: (progress, message) => {
+                setExportProgress(progress);
+              },
+            });
+          }
+        } catch (e) {
+          // Server not available, use client-side
+          outputUrl = await ExportService.export({
+            videoUrl: videoSrc,
+            subtitleContent: srtContent,
+            subtitleStyle: subtitleStyle,
+            audioUrl: audioSrc || undefined,
+            audioVolume: audioVolume,
+            onProgress: (progress, message) => {
+              setExportProgress(progress);
+            },
+          });
+        }
       } else {
-        // Fallback to client-side FFmpeg.wasm
+        // Client-side export
         outputUrl = await ExportService.export({
           videoUrl: videoSrc,
           subtitleContent: srtContent,

@@ -22,7 +22,15 @@ export class ServerExportService {
    */
   static async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch('/api/export');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch('/api/export', {
+        method: 'GET',
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
       return response.ok;
     } catch {
       return false;
@@ -48,6 +56,9 @@ export class ServerExportService {
     
     // Fetch and append video file
     const videoResponse = await fetch(videoUrl);
+    if (!videoResponse.ok) {
+      throw new Error('Failed to fetch video file');
+    }
     const videoBlob = await videoResponse.blob();
     const videoFile = new File([videoBlob], 'video.mp4', { type: 'video/mp4' });
     formData.append('video', videoFile);
@@ -61,6 +72,9 @@ export class ServerExportService {
     if (audioUrl) {
       onProgress?.(15, 'Processing audio...');
       const audioResponse = await fetch(audioUrl);
+      if (!audioResponse.ok) {
+        throw new Error('Failed to fetch audio file');
+      }
       const audioBlob = await audioResponse.blob();
       const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mpeg' });
       formData.append('audio', audioFile);
@@ -69,15 +83,27 @@ export class ServerExportService {
     
     onProgress?.(25, 'Processing video...');
     
-    // Send request to server
+    // Send request to server with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+    
     const response = await fetch(this.apiUrl, {
       method: 'POST',
       body: formData,
+      signal: controller.signal,
     });
     
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Export failed' }));
-      throw new Error(errorData.error || 'Export failed');
+      let errorMessage = 'Export failed';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      throw new Error(errorMessage);
     }
     
     onProgress?.(90, 'Finalizing...');
