@@ -38,6 +38,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
 }, ref) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Touch handling refs
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const touchStartTime = useRef<number>(0);
+  const isSwiping = useRef<boolean>(false);
+  
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -50,6 +57,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   const [showSubtitlePosition, setShowSubtitlePosition] = useState(false);
   const [isLooping, setIsLooping] = useState(loop);
   const [currentSpeed, setCurrentSpeed] = useState(playbackSpeed);
+  const [seekPreview, setSeekPreview] = useState<{ time: number; visible: boolean }>({ time: 0, visible: false });
+  
+  // Detect touch device
+  const isTouchDevice = typeof window !== 'undefined' && 'ontouchstart' in window;
 
   const effectivePosition = subtitlePosition || internalSubtitlePosition;
   const hasExternalPositionControl = !!onSubtitlePositionChange;
@@ -103,14 +114,19 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     };
   }, [onTimeUpdate, onEnded, onLoadedMetadata, isLooping]);
 
-  // Auto-hide controls after 3 seconds of inactivity
+  // Auto-hide controls - Mobile: Always show, Desktop: Auto-hide
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (playing && showControls) {
-      timeout = setTimeout(() => setShowControls(false), 3000);
+    if (isTouchDevice) {
+      setShowControls(true);
     }
-    return () => clearTimeout(timeout);
-  }, [playing, showControls]);
+  }, [isTouchDevice]);
+
+  useEffect(() => {
+    if (!isTouchDevice && playing) {
+      const timeout = setTimeout(() => setShowControls(false), 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [playing, isTouchDevice]);
 
   // Update video playback rate
   useEffect(() => {
@@ -169,8 +185,51 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   };
 
   const handleVideoClick = () => {
+    // Prevent click if swiping
+    if (isSwiping.current) return;
     setShowControls(true);
     togglePlay();
+  };
+
+  // Touch gesture handlers for swipe seeking
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartX.current = touch.clientX;
+    touchStartY.current = touch.clientY;
+    touchStartTime.current = videoRef.current?.currentTime || 0;
+    isSwiping.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!videoRef.current || !duration) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartX.current;
+    const deltaY = touch.clientY - touchStartY.current;
+    
+    // Detect horizontal swipe (more horizontal than vertical)
+    if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      isSwiping.current = true;
+      
+      // Calculate seek time based on swipe (50px = 5 seconds)
+      const seekDelta = (deltaX / 50) * 5;
+      const newTime = Math.max(0, Math.min(duration, touchStartTime.current + seekDelta));
+      
+      setSeekPreview({ time: newTime, visible: true });
+      setShowControls(true);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (seekPreview.visible && seekPreview.time !== touchStartTime.current) {
+      videoRef.current!.currentTime = seekPreview.time;
+      setCurrentTime(seekPreview.time);
+    }
+    
+    setTimeout(() => {
+      setSeekPreview({ time: 0, visible: false });
+      isSwiping.current = false;
+    }, 100);
   };
 
   const skipBackward = () => {
@@ -199,7 +258,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   };
 
   const handleSubtitleMove = (direction: 'up' | 'down' | 'left' | 'right') => {
-    const step = 5;
+    const step = 0.5;
     let newPosition: SubtitlePosition;
     
     switch (direction) {
@@ -233,8 +292,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full bg-black overflow-hidden"
-      onMouseMove={() => setShowControls(true)}
+      className="relative w-full bg-black overflow-hidden touch-none select-none"
+      onMouseMove={() => !isTouchDevice && setShowControls(true)}
+      onTouchStart={() => isTouchDevice && setShowControls(true)}
     >
       {/* Video Container - Fixed aspect ratio 16:9, centered */}
       <div 
@@ -251,6 +311,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
           playsInline
           muted={muted}
           onClick={handleVideoClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className="absolute inset-0 w-full h-full object-contain cursor-pointer"
           style={{ maxHeight: '100%', maxWidth: '100%' }}
         />
