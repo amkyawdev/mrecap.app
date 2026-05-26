@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useTimelineStore, TextOverlay } from '../store/timelineStore';
-import { Type, Plus, Trash2, Move, Palette, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { TextOverlay } from '../store/timelineStore';
+import { Type, Plus, Trash2, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const FONT_OPTIONS = [
   { value: 'Arial, sans-serif', label: 'Arial' },
@@ -26,13 +26,10 @@ const PRESET_COLORS = [
 ];
 
 export const TextOverlayEditor: React.FC = () => {
-  const { subtitles } = useTimelineStore();
+  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const [showAddPanel, setShowAddPanel] = useState(false);
-
-  // Local text overlays state (simplified - stored in subtitles for now)
-  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
 
   const handleAddText = () => {
     const newOverlay: TextOverlay = {

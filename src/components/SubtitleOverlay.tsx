@@ -5,15 +5,23 @@ import { useProjectStore } from '../store/projectStore';
 interface SubtitleOverlayProps {
   subtitles: Subtitle[];
   currentTime: number;
+  position?: { bottom?: number; left: number; top?: number };
+  onPositionChange?: (position: { bottom?: number; left: number; top?: number }) => void;
 }
 
 export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
   subtitles,
   currentTime,
+  position: externalPosition,
+  onPositionChange,
 }) => {
   const [activeSubtitle, setActiveSubtitle] = useState<Subtitle | null>(null);
-  const [position, setPosition] = useState({ bottom: 40, left: 50 });
+  const internalPosition = useState({ bottom: 40, left: 50 });
   const { subtitleStyle } = useProjectStore();
+  
+  const [position, setPosition] = useState({ bottom: 40, left: 50 });
+  const effectivePosition = externalPosition || position;
+  const hasExternalControl = !!onPositionChange;
 
   useEffect(() => {
     const active = subtitles.find(
@@ -31,45 +39,43 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
     return `rgba(${r}, ${g}, ${b}, ${subtitleStyle.backgroundOpacity})`;
   }, [subtitleStyle.backgroundColor, subtitleStyle.backgroundOpacity]);
 
-  // Keyboard arrow controls
+  // Internal keyboard arrow controls (only when no external control)
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!activeSubtitle) return;
+    if (!activeSubtitle || hasExternalControl) return;
     
     const step = e.shiftKey ? 10 : 2; // Shift for larger movement
     
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
-        setPosition(prev => ({
-          ...prev,
-          bottom: Math.min(95, (prev.bottom || 0) + step),
-          top: undefined
-        }));
+        setPosition(prev => {
+          const newPos = { ...prev, bottom: Math.min(95, (prev.bottom || 0) + step), top: undefined };
+          return newPos;
+        });
         break;
       case 'ArrowDown':
         e.preventDefault();
-        setPosition(prev => ({
-          ...prev,
-          bottom: Math.max(5, (prev.bottom || 40) - step),
-          top: undefined
-        }));
+        setPosition(prev => {
+          const newPos = { ...prev, bottom: Math.max(5, (prev.bottom || 40) - step), top: undefined };
+          return newPos;
+        });
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        setPosition(prev => ({
-          ...prev,
-          left: Math.max(5, (prev.left || 50) - step)
-        }));
+        setPosition(prev => {
+          const newPos = { ...prev, left: Math.max(5, (prev.left || 50) - step) };
+          return newPos;
+        });
         break;
       case 'ArrowRight':
         e.preventDefault();
-        setPosition(prev => ({
-          ...prev,
-          left: Math.min(95, (prev.left || 50) + step)
-        }));
+        setPosition(prev => {
+          const newPos = { ...prev, left: Math.min(95, (prev.left || 50) + step) };
+          return newPos;
+        });
         break;
     }
-  }, [activeSubtitle]);
+  }, [activeSubtitle, hasExternalControl]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -80,7 +86,7 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
 
   // Position style
   const getPositionStyle = () => {
-    const pos = position as { bottom?: number; left: number; top?: number };
+    const pos = effectivePosition as { bottom?: number; left: number; top?: number };
     const baseStyle: React.CSSProperties = {
       left: `${pos.left}%`,
       transform: 'translateX(-50%)',
@@ -89,7 +95,7 @@ export const SubtitleOverlay: React.FC<SubtitleOverlayProps> = ({
     if (pos.top !== undefined) {
       return { ...baseStyle, top: `${pos.top}%`, bottom: undefined };
     }
-    return { ...baseStyle, bottom: `${pos.bottom}px`, top: undefined };
+    return { ...baseStyle, bottom: `${pos.bottom || 40}px`, top: undefined };
   };
 
   return (

@@ -6,9 +6,15 @@ import { Timeline } from '../components/Timeline';
 import { EffectsPanel } from '../components/EffectsPanel';
 import { TextOverlayEditor } from '../components/TextOverlayEditor';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
-import { ArrowLeft, Download, Music, Type, Sparkles, Upload, Film, FolderOpen, Scissors, Trash2, Settings, Undo, Redo } from 'lucide-react';
+import { ArrowLeft, Download, Music, Type, Sparkles, Upload, Film, FolderOpen, Scissors, Trash2, Settings, Undo, Redo, ChevronLeft, ChevronRight, SkipBack, SkipForward, Play, Pause } from 'lucide-react';
 
 type EditorTab = 'effects' | 'text' | 'audio';
+
+interface SubtitlePosition {
+  bottom?: number;
+  left: number;
+  top?: number;
+}
 
 export const FullEditorScreen: React.FC = () => {
   const { videoSrc, videoDuration, subtitles, setCurrentScreen } = useProjectStore();
@@ -29,6 +35,13 @@ export const FullEditorScreen: React.FC = () => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [currentVideoDuration, setCurrentVideoDuration] = useState(0);
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({ bottom: 40, left: 50 });
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(false);
+  const [showMiniPlayerControls, setShowMiniPlayerControls] = useState(true);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // Initialize with video clip from project store
   useEffect(() => {
@@ -239,11 +252,19 @@ export const FullEditorScreen: React.FC = () => {
             <VideoPlayer
               src={previewUrl}
               onTimeUpdate={handleTimeUpdate}
-              autoPlay={false}
+              autoPlay={isPlaying}
+              playbackSpeed={playbackSpeed}
+              loop={isLooping}
+              showSubtitleControls={true}
+              subtitlePosition={subtitlePosition}
+              onSubtitlePositionChange={setSubtitlePosition}
+              onPlaybackSpeedChange={setPlaybackSpeed}
               overlay={
                 <SubtitleOverlay
                   subtitles={subtitles}
                   currentTime={currentTime}
+                  position={subtitlePosition}
+                  onPositionChange={setSubtitlePosition}
                 />
               }
             />

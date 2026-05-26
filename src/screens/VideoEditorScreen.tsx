@@ -6,8 +6,15 @@ import { TimelineSlider } from '../components/TimelineSlider';
 import { SubtitleOverlay } from '../components/SubtitleOverlay';
 import { ArrowLeft, Video, Clapperboard, FolderOpen, ChevronRight, RotateCcw } from 'lucide-react';
 
+interface SubtitlePosition {
+  bottom?: number;
+  left: number;
+  top?: number;
+}
+
 export const VideoEditorScreen: React.FC = () => {
   const { subtitles } = useProjectStore();
+  const [subtitlePosition, setSubtitlePosition] = useState<SubtitlePosition>({ bottom: 40, left: 50 });
   
   const {
     videoRef,
@@ -36,6 +43,10 @@ export const VideoEditorScreen: React.FC = () => {
     if (file) {
       await loadVideo(file);
     }
+  };
+
+  const handleSubtitlePositionChange = (position: { bottom?: number; left: number; top?: number }) => {
+    setSubtitlePosition(position);
   };
 
   if (!videoSrc) {
@@ -92,10 +103,15 @@ export const VideoEditorScreen: React.FC = () => {
           src={videoSrc}
           onTimeUpdate={handleTimeUpdate}
           autoPlay={playing}
+          showSubtitleControls={true}
+          subtitlePosition={subtitlePosition}
+          onSubtitlePositionChange={handleSubtitlePositionChange}
           overlay={
             <SubtitleOverlay
               subtitles={subtitles}
               currentTime={currentTime}
+              position={subtitlePosition}
+              onPositionChange={handleSubtitlePositionChange}
             />
           }
         />
