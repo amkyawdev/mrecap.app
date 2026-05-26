@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useTimelineStore } from '../store/timelineStore';
 import { ExportService } from '../services/exportService';
-import { ServerExportService } from '../services/serverExportService';
 
 export function useExport() {
   const [isExporting, setIsExporting] = useState(false);
@@ -27,7 +26,7 @@ export function useExport() {
     videoClips,
     selectedClipId,
   } = useTimelineStore();
-
+  
   const startExport = useCallback(async () => {
     if (!videoSrc) return;
     
@@ -54,100 +53,31 @@ export function useExport() {
       
       let outputUrl: string;
       
-      // Try server-side export first (more reliable with Docker)
-      // Only try if we're in a server environment
-      if (typeof window !== 'undefined') {
-        try {
-          const serverAvailable = await Promise.race([
-            ServerExportService.checkHealth(),
-            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000)) // 2s timeout
-          ]);
-          
-          if (serverAvailable) {
-            // Use server-side export with FFmpeg in Docker
-            setUsingServerExport(true);
-            outputUrl = await ServerExportService.export({
-              videoUrl: videoSrc,
-              subtitleContent: srtContent,
-              subtitleStyle: subtitleStyle,
-              audioUrl: audioSrc || undefined,
-              audioVolume: audioVolume,
-              effects: clipEffects,
-              filter: clipFilter,
-              rotation: clipRotation,
-              flipH: clipFlipH,
-              flipV: clipFlipV,
-              speed: clipSpeed,
-              volume: clipVolume,
-              onProgress: (progress, message) => {
-                setExportProgress(progress);
-              },
-            });
-          } else {
-            // Fallback to client-side FFmpeg.wasm
-            outputUrl = await ExportService.export({
-              videoUrl: videoSrc,
-              subtitleContent: srtContent,
-              subtitleStyle: subtitleStyle,
-              audioUrl: audioSrc || undefined,
-              audioVolume: audioVolume,
-              effects: clipEffects,
-              filter: clipFilter,
-              rotation: clipRotation,
-              flipH: clipFlipH,
-              flipV: clipFlipV,
-              speed: clipSpeed,
-              volume: clipVolume,
-              onProgress: (progress, message) => {
-                setExportProgress(progress);
-              },
-            });
-          }
-        } catch (e) {
-          // Server not available, use client-side
-          outputUrl = await ExportService.export({
-            videoUrl: videoSrc,
-            subtitleContent: srtContent,
-            subtitleStyle: subtitleStyle,
-            audioUrl: audioSrc || undefined,
-            audioVolume: audioVolume,
-            effects: clipEffects,
-            filter: clipFilter,
-            rotation: clipRotation,
-            flipH: clipFlipH,
-            flipV: clipFlipV,
-            speed: clipSpeed,
-            volume: clipVolume,
-            onProgress: (progress, message) => {
-              setExportProgress(progress);
-            },
-          });
-        }
-      } else {
-        // Client-side export
-        outputUrl = await ExportService.export({
-          videoUrl: videoSrc,
-          subtitleContent: srtContent,
-          subtitleStyle: subtitleStyle,
-          audioUrl: audioSrc || undefined,
-          audioVolume: audioVolume,
-          effects: clipEffects,
-          filter: clipFilter,
-          rotation: clipRotation,
-          flipH: clipFlipH,
-          flipV: clipFlipV,
-          speed: clipSpeed,
-          volume: clipVolume,
-          onProgress: (progress, message) => {
-            setExportProgress(progress);
-          },
-        });
-      }
+      // Client-side export using FFmpeg.wasm
+      setUsingServerExport(false);
+      outputUrl = await ExportService.export({
+        videoUrl: videoSrc,
+        subtitleContent: srtContent,
+        subtitleStyle: subtitleStyle,
+        audioUrl: audioSrc || undefined,
+        audioVolume: audioVolume,
+        effects: clipEffects,
+        filter: clipFilter,
+        rotation: clipRotation,
+        flipH: clipFlipH,
+        flipV: clipFlipV,
+        speed: clipSpeed,
+        volume: clipVolume,
+        onProgress: (progress, message) => {
+          setExportProgress(progress);
+        },
+      });
       
       setExportedVideoSrc(outputUrl);
     } catch (error: any) {
       console.error('Export failed:', error);
-      setExportError(error.message || 'Failed to export video. Please try again.');
+      const errorMessage = error.message || 'Failed to export video';
+      setExportError(errorMessage);
     } finally {
       setIsExporting(false);
     }
